@@ -3,23 +3,28 @@ TG_CHAT_ID=985959967
 TG_BOT_TOKEN=7694863935:AAEMK4MmLacTzBEc6-UVdg91M8B2JmyNvT0
 
 #github actions params
-PROJECT="okto-local-server" ## ${{needs.build.result}}
-BUILD_RESULT="success" ## ${{needs.build.result}}
-ACTOR="xakepp35" ## 
-DEPLOY_SERVER="mars.stage.okto.ru" # ${{inputs.server}}
+PROJECT="test-project" ## ${{needs.build.result}}
+BUILD_RESULT="failure" ## ${{needs.build.result}}
+DEPLOY_SERVER="google.com" # ${{inputs.server}}
 IS_BUILD="true" # ${{inputs.build}}
 IS_DEPLOY="true" # ${{inputs.deploy}}
 START_TIME=$(date +%s) # $(date -d "${{ github.run_started_at }}" +%s)
-LOGS=""
-GIT_BRANCH="branch"
+LOGS="hello\nworld"
+GIT_BRANCH="main"
+GIT_SERVER="https://github.com" # ${{github.server_url}}
+GIT_REPO="xakepp35/pkg" # ${{github.repository}}
+GIT_RUN="123" # ${{github.run_id}}
+GIT_ACTOR="xakepp35" ## ${{github.actor}}
+DOCKER_TAG="qwertmax/okto-local-server:feature-swagger-12345678"
+NOTIFICATION_HEADER="🚀 *Build and Deploy* 🚀"
 
-#TODO pass everything is needed, 
-WORKFLOW_URL= "https://github.com/"#${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-
-
+GIT_REPO_URL="${GIT_SERVER}/${GIT_REPO}/"
+GIT_ACTOR_URL="${GIT_SERVER}/${GIT_ACTOR}/"
+GIT_RUN_URL="${GIT_REPO_URL}actions/runs/${GIT_RUN}"
+GIT_BRANCH_URL="${GIT_REPO_URL}tree/${GIT_BRANCH}"
 
 STATUS="✅ Success"
-if [[ "${{ BUILD_RESULT }}" != "success" ]]; then
+if [[ "${BUILD_RESULT}" != "success" ]]; then
 	STATUS="❌ Failure"
 	# LOGS=$(tail -n 20 $GITHUB_WORKSPACE/_temp/logs || echo "No logs available.")
 fi
@@ -29,35 +34,32 @@ END_TIME=$(date +%s)
 DURATION=$(( END_TIME - START_TIME ))
 MINUTES=$(( DURATION / 60 ))
 SECONDS=$(( DURATION % 60 ))
-TEXT="🚀 *Build and Deploy* 🚀\n"
-TEXT="${TEXT}\n"
-if [[ "${{ BUILD_RESULT }}" != "success" ]]; then
-TEXT="${TEXT}- *Build:* ${IS_BUILD}\n"
-fi
+TXT="$NOTIFICATION_HEADER\n\n"
+# if [[ "$BUILD_RESULT" != "success" ]]; then
+#   TXT="${TXT}- *Build:* $IS_BUILD\n"
+# fi
+TXT="${TXT}*Status*: ${STATUS}\n\n"
+TXT="${TXT}*Repo:* [${GIT_REPO}](${GIT_REPO_URL})\n"
+TXT="${TXT}*Actor:* [${GIT_ACTOR}](${GIT_ACTOR_URL})\n"
+TXT="${TXT}*Branch:* [${GIT_BRANCH}](${GIT_BRANCH_URL})\n"
+TXT="${TXT}*Run:* [$GIT_RUN]($GIT_RUN_URL)\n"
 
-TEXT="${TEXT}\**Status*: ${STATUS}\n"
-TEXT="${TEXT}\**Project*: ${PROJECT}\n"
-TEXT="${TEXT}*Actor:* ${ACTOR}\n"
-TEXT="${TEXT}- *Branch:* ${GIT_BRANCH}\n"
-if BUILD then
-	TEXT="${TEXT}- *Build time:* ${GIT_BRANCH}\n"
-if DEPLOY then
-	TEXT="${TEXT}- *Server:* ${DEPLOY_SERVER}\n"
+TXT="${TXT}*Project*: ${PROJECT}\n"
+if [[ "${IS_BUILD}" == "true" ]]; then
+	TXT="${TXT}*Build time:* $MINUTES min $SECONDS sec\n"
 fi
-TEXT="${TEXT}\n"
-TEXT="${TEXT}- *Docker tag:* ${TODO}\n"
-TEXT="${TEXT}- *Cost:* ${MINUTES} min ${SECONDS} sec\n"
-TEXT="${TEXT}- *Run:* [Workflow Link](${WORKFLOW_URL})\n"
-
+if [[ "${IS_DEPLOY}" = "true" ]]; then
+	TXT="${TXT}*Deploy Server:* ${DEPLOY_SERVER}\n"
+fi
+TXT="${TXT}*Docker tag:* $DOCKER_TAG\n"
 
 if [[ "$BUILD_RESULT" != "success" ]]; then
-  TEXT="${TEXT}\nLogs:\n\`\`\`\n${LOGS}\n\`\`\`"
+  TXT="${TXT}\n*Logs:*\n\`\`\`\n${LOGS}\n\`\`\`"
 fi
-
-TEXT=$(printf "%b" "$TEXT")
-
-echo $TEXT
+TXT=$(printf "%b" "$TXT")
+echo $TXT
 curl -X POST "https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage" \
   -d parse_mode="Markdown" \
   -d chat_id="${TG_CHAT_ID}" \
-  -d text="$TEXT"
+  -d disable_web_page_preview=true \
+  -d text="$TXT"

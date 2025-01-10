@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	"time"
+
+	"github.com/xakepp35/pkg/xslice"
 )
 
 // Log — основной логгер
@@ -51,7 +53,7 @@ func (l *Log) New() *Line {
 		return nil
 	}
 	line := &Line{
-		buf: *NewBufferSize(l.cfg.InitialLineBufSize),
+		buf: *xslice.NewBufferSized(l.cfg.InitialLineBufSize),
 		log: l,
 	}
 	line.buf.Byte('{')

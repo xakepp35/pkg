@@ -26,11 +26,11 @@ func Get[T any](key string, def T) T {
 	case uint:
 		return (any)(Uint(key, tp)).(T)
 	case uint8:
-		return (any)(uint8(Uint(key, uint(tp)))).(T)
+		return (any)(uint8(Uint8(key, tp))).(T)
 	case uint16:
-		return (any)(uint16(Uint(key, uint(tp)))).(T)
+		return (any)(uint16(Uint16(key, tp))).(T)
 	case uint32:
-		return (any)(uint32(Uint(key, uint(tp)))).(T)
+		return (any)(uint32(Uint32(key, tp))).(T)
 	case uint64:
 		return (any)(Uint64(key, tp)).(T)
 	case uintptr:
@@ -88,6 +88,42 @@ func Int64(key string, def int64) int64 {
 	return result
 }
 
+func Int32(key string, def int32) int32 {
+	envStr := os.Getenv(key)
+	if envStr == "" {
+		return def
+	}
+	result, err := strconv.ParseInt(envStr, 10, 32)
+	if err != nil {
+		return def
+	}
+	return int32(result)
+}
+
+func Int16(key string, def int16) int16 {
+	envStr := os.Getenv(key)
+	if envStr == "" {
+		return def
+	}
+	result, err := strconv.ParseInt(envStr, 10, 16)
+	if err != nil {
+		return def
+	}
+	return int16(result)
+}
+
+func Int8(key string, def int8) int8 {
+	envStr := os.Getenv(key)
+	if envStr == "" {
+		return def
+	}
+	result, err := strconv.ParseInt(envStr, 10, 8)
+	if err != nil {
+		return def
+	}
+	return int8(result)
+}
+
 func Uint(key string, def uint) uint {
 	envStr := os.Getenv(key)
 	if envStr == "" {
@@ -112,6 +148,46 @@ func Uint64(key string, def uint64) uint64 {
 	return result
 }
 
+func Uint32(key string, def uint32) uint32 {
+	envStr := os.Getenv(key)
+	if envStr == "" {
+		return def
+	}
+	result, err := strconv.ParseUint(envStr, 10, 32)
+	if err != nil {
+		return def
+	}
+	return uint32(result)
+}
+
+func Uint16(key string, def uint16) uint16 {
+	envStr := os.Getenv(key)
+	if envStr == "" {
+		return def
+	}
+	result, err := strconv.ParseUint(envStr, 10, 16)
+	if err != nil {
+		return def
+	}
+	return uint16(result)
+}
+
+func Uint8(key string, def uint8) uint8 {
+	envStr := os.Getenv(key)
+	if envStr == "" {
+		return def
+	}
+	result, err := strconv.ParseUint(envStr, 10, 8)
+	if err != nil {
+		return def
+	}
+	return uint8(result)
+}
+
+func Uintptr(key string, def uintptr) uintptr {
+	return uintptr(Uint64(key, uint64(def)))
+}
+
 func Float64(key string, def float64) float64 {
 	envStr := os.Getenv(key)
 	if envStr == "" {
@@ -122,6 +198,18 @@ func Float64(key string, def float64) float64 {
 		return def
 	}
 	return result
+}
+
+func Float32(key string, def float32) float32 {
+	envStr := os.Getenv(key)
+	if envStr == "" {
+		return def
+	}
+	result, err := strconv.ParseFloat(envStr, 32)
+	if err != nil {
+		return def
+	}
+	return float32(result)
 }
 
 // Bool return the value of env variable as bool
@@ -139,6 +227,18 @@ func Duration(key string, def time.Duration) time.Duration {
 		return def
 	}
 	result, err := time.ParseDuration(envStr)
+	if err != nil {
+		return def
+	}
+	return result
+}
+
+func Time(key string, def time.Time) time.Time {
+	envStr := os.Getenv(key)
+	if envStr == "" {
+		return def
+	}
+	result, err := time.Parse(time.RFC3339Nano, envStr)
 	if err != nil {
 		return def
 	}

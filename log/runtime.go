@@ -4,19 +4,19 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	"github.com/xakepp35/pkg/fslice"
+	"github.com/xakepp35/pkg/xslice"
 )
 
 func RuntimeStackTrace() [][]byte {
 	stackBytes := debug.Stack()
-	return fslice.SplitBytes(stackBytes, '\n')
+	return xslice.SplitBytes(stackBytes, '\n')
 }
 
 const RuntimeFunctionSkip = 2
 
 func RuntimeFunctionName(addSkip int) string {
 	res := RuntimeFunction(addSkip + 1).Name()
-	lastIndex := fslice.LastIndexByteString(res, '/')
+	lastIndex := xslice.LastIndexByteString(res, '/')
 	res = res[lastIndex+1:]
 	return res
 }

@@ -1,10 +1,12 @@
 package xlog
 
+import "github.com/xakepp35/pkg/xslice"
+
 // Line — структура для построения строки лога
 type Line struct {
-	buf           Buffer // Буфер для текущей строки
-	log           *Log   // Родительский логгер
-	needSeparator bool   // Нужна ли запятая меджу entries
+	buf           xslice.Buffer // Буфер для текущей строки
+	log           *Log          // Родительский логгер
+	needSeparator bool          // Нужна ли запятая меджу entries
 }
 
 // Bool добавляет булево значение

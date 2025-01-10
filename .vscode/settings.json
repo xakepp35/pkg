@@ -1,1 +1,11 @@
-{}
+{
+	"go.testTimeout": "30s",
+	"makefile.extensionOutputFolder": "./.vscode",
+	"editor.detectIndentation": false,
+	"editor.tabSize": 4,
+	"editor.insertSpaces": false,
+	"gopls": {
+		"ui.documentation.linksInHover": false,
+		"ui.navigation.importShortcut": "Definition",
+	},
+}

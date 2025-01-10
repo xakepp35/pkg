@@ -1,4 +1,8 @@
-package fslice
+package xslice
+
+func SplitBytesLines(s []byte) [][]byte {
+	return SplitBytes(s, '\n')
+}
 
 // Optimized split for a single byte separator (strict O(N), no extra iterations)
 func SplitBytes(s []byte, sep byte) [][]byte {

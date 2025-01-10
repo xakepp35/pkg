@@ -1,4 +1,4 @@
-package xlog
+package xslice
 
 const (
 	BufferInitialSize = 64
@@ -9,10 +9,10 @@ type Buffer struct {
 }
 
 func NewBuffer() *Buffer {
-	return NewBufferSize(BufferInitialSize)
+	return NewBufferSized(BufferInitialSize)
 }
 
-func NewBufferSize(size int) *Buffer {
+func NewBufferSized(size int) *Buffer {
 	return &Buffer{
 		buf: make([]byte, 0, size),
 	}
