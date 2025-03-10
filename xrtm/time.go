@@ -1,6 +1,8 @@
 package xrtm
 
-import "time"
+import (
+	"time"
+)
 
 // timestampFunc for UTC time
 func TimeUTC() time.Time {
