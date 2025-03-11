@@ -1,4 +1,4 @@
-package middleware
+package xfasthttp
 
 import (
 	"time"
@@ -22,8 +22,8 @@ func MiddlewareZerolog(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 				Str("route", string(ctx.Path())).
 				Int("status", ctx.Response.StatusCode()).
 				Dur("cost", duration).
-				Any("headers", ctx.Request.Header.String()).
-				Any("query", ctx.QueryArgs().String()).
+				Str("headers", string(ctx.Request.Header.RawHeaders())).
+				Str("uri", string(ctx.Request.RequestURI())).
 				Int("req_size", len(requestBody)).
 				Int("res_size", len(responseBody)).
 				Func(xlog.RawJSON("req_body", requestBody)).
