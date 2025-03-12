@@ -1,6 +1,7 @@
 package xhttp
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -20,9 +21,25 @@ func NewServerConfig() *ServerConfig {
 
 // startHTTPServer запускает HTTP-сервер.
 func RunServer(cfg *ServerConfig, mux chi.Router) {
-	log.Info().Str("addr", cfg.Addr).Msg("Starting HTTP server")
+	log.Info().
+		Any("cfg", cfg).
+		Msg("xhttp.StartServer")
 	if err := http.ListenAndServe(cfg.Addr, mux); err != nil {
-		log.Fatal().Err(err).Msg("http.ListenAndServe")
+		log.Fatal().
+			Err(err).
+			Msg("http.ListenAndServe")
 	}
-	log.Info().Msg("Stopping HTTP server")
+	log.Info().
+		Msg("xhttp.StopServer")
+}
+
+func RespondJSON(w http.ResponseWriter, val any) {
+	w.Header().Set(HeaderContentType, ContentTypeJson)
+	if err := json.NewEncoder(w).Encode(val); err != nil {
+		log.Error().
+			Err(err).
+			Any("val", val).
+			Msg("json.NewEncoder(w).Encode(val)")
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
