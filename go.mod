@@ -3,6 +3,7 @@ module github.com/xakepp35/pkg
 go 1.24
 
 require (
+	github.com/gofrs/uuid/v5 v5.3.1
 	github.com/rs/zerolog v1.33.0
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fasthttp v1.59.0
