@@ -11,7 +11,7 @@ import (
 type ZeroLogger struct{}
 
 func WithZeroLogger() fx.Option {
-	return NewZeroLogger().Use()
+	return fx.WithLogger(NewZeroLogger)
 }
 
 func NewZeroLogger() *ZeroLogger {
