@@ -33,3 +33,19 @@ func MiddlewareZerolog(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		next(ctx)
 	}
 }
+
+// мидлвара для отлова паники и логирования через zerolog
+func MiddlewarePanicRecovery(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+	return func(ctx *fasthttp.RequestCtx) {
+		defer func() {
+			if err := recover(); err != nil {
+				log.Error().
+					Interface("panic", err).
+					Stack().
+					Msg("recover")
+				ctx.Error("Internal Server Error", fasthttp.StatusInternalServerError)
+			}
+		}()
+		next(ctx)
+	}
+}
