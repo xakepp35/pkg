@@ -13,11 +13,11 @@ import "github.com/xakepp35/pkg/sqb"
 ## Quick Start
 ```go
 func main() {
-	// Acquiring a QueryBuilder Instance
+    // Acquiring a QueryBuilder Instance
     qb := sqb.GetBuilder()
     defer sqb.RealiseBuilder(qb) // Release the builder after use
 
-    // Создаем запрос
+    // Query creation
     query, args := qb.Select("id", "name").
         From("users").
         Where("age > ?", 18).
