@@ -42,7 +42,7 @@ func (s *tracerBatch) TraceBatchQuery(ctx context.Context, conn *pgx.Conn, data 
 		Str("command_tag", data.CommandTag.String()).
 		Dur("cost", duration).
 		Uint32("pid", conn.PgConn().PID()).
-		Msg("batch query")
+		Msg("query")
 }
 
 func (s *tracerBatch) TraceBatchEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceBatchEndData) {
@@ -52,5 +52,5 @@ func (s *tracerBatch) TraceBatchEnd(ctx context.Context, conn *pgx.Conn, data pg
 		Int("len", traceData.Batch.Len()).
 		Dur("cost", duration).
 		Uint32("pid", conn.PgConn().PID()).
-		Msg("batch end")
+		Msg("end")
 }
