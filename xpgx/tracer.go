@@ -2,9 +2,10 @@ package xpgx
 
 import (
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type tracer struct {
+type Tracer struct {
 	pgx.QueryTracer
 	pgx.BatchTracer
 	pgx.CopyFromTracer
@@ -12,8 +13,8 @@ type tracer struct {
 	pgx.ConnectTracer
 }
 
-func NewTracer() *tracer {
-	return &tracer{
+func NewTracer() *Tracer {
+	return &Tracer{
 		QueryTracer:    NewTracerQuery(),
 		BatchTracer:    NewTracerBatch(),
 		CopyFromTracer: NewTracerCopyFrom(),
@@ -22,6 +23,10 @@ func NewTracer() *tracer {
 	}
 }
 
-func (s *tracer) Apply(connConfig *pgx.ConnConfig) {
+func RegisterTracer(tr *Tracer, cfg *pgxpool.Config) {
+	tr.Apply(cfg.ConnConfig)
+}
+
+func (s *Tracer) Apply(connConfig *pgx.ConnConfig) {
 	connConfig.Tracer = s
 }
