@@ -10,7 +10,7 @@ import (
 )
 
 // NewPool создаёт новый пул соединений с базой данных
-func NewPool(lc fx.Lifecycle, cfg *pgxpool.Config) (*pgxpool.Pool, error) {
+func NewPool(cfg *pgxpool.Config) (*pgxpool.Pool, error) {
 	NewTracer().Apply(cfg.ConnConfig)
 	pool, err := pgxpool.NewWithConfig(context.Background(), cfg)
 	xlog.ErrInfo(err).

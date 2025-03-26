@@ -1,3 +1,6 @@
 package xpgx
 
-const DefaultDSN = `postgres://postgres:postgres@localhost:5432/postgres`
+const (
+	DefaultDSNKey = "PG_DSN"
+	DefaultDSN    = `postgres://postgres:postgres@localhost:5432/postgres`
+)
