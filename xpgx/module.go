@@ -9,38 +9,44 @@ import (
 )
 
 func NewModule(poolName string) fx.Option {
-	dsnEnv := "PG_DSN"
-	if poolName != "" {
-		dsnEnv += strings.ToUpper(poolName)
-	}
+	dsnKey := genDsnKey(poolName)
+	dsnEnv := env.String(dsnKey, DefaultDSN)
 	tagDsn := `name:"pg_dsn_` + poolName + `"`
 	tagCfg := `name:"pg_cfg_` + poolName + `"`
-	tagPool := `name:"pg_pool_` + poolName + `"`
+	tagPool := genPoolTag(poolName)
+	tagTrc := `name:"pg_trc_` + poolName + `"`
+	tagPlc := `name:"pg_plc_` + poolName + `"`
 	return fx.Module("xpgx-"+poolName,
+		fx.Supply(
+			fx.Annotate(dsnEnv, fx.ResultTags(tagDsn)),
+		),
 		fx.Provide(
-			fx.Annotate(env.String(dsnEnv, ""), fx.ResultTags(tagDsn)),
 			fx.Annotate(pgxpool.ParseConfig, fx.ParamTags(tagDsn), fx.ResultTags(tagCfg)),
-			NewTracer,
+			fx.Annotate(NewTracer, fx.ResultTags(tagTrc)),
 		),
 		fx.Invoke(
-			RegisterTracer,
+			fx.Annotate(RegisterTracer, fx.ParamTags(tagTrc, tagCfg)),
 		),
 		fx.Provide(
 			fx.Annotate(NewPool, fx.ParamTags(tagCfg), fx.ResultTags(tagPool)),
-			fx.Annotate(NewLifecycle, fx.ParamTags(tagPool)),
+			fx.Annotate(NewLifecycle, fx.ParamTags(tagPool), fx.ResultTags(tagPlc)),
 		),
-		fx.Invoke(RegisterLifecycle),
+		fx.Invoke(
+			fx.Annotate(RegisterLifecycle, fx.ParamTags("", tagPlc)),
+		),
 	)
 }
 
-// var Module = fx.Module("xpgx",
-// 	fx.Provide(
-// 		fx.Annotate(env.String("PG_DSN", ""), fx.ResultTags(`name:"pg_dsn"`)),
-// 		fx.Annotate(pgxpool.ParseConfig, fx.ParamTags(`name:"pg_dsn"`), fx.ResultTags(`name:"pg_cfg"`)),
-// 		NewTracer,
+func genDsnKey(poolName string) string {
+	if poolName == "" {
+		return DefaultDSNKey
+	}
+	return DefaultDSNKey + "_" + strings.ToUpper(poolName)
+}
 
-// 		fx.Annotate(NewPool, fx.ParamTags(`name:"pg_cfg"`), fx.ResultTags(`name:"pg_pool"`)),
-// 		fx.Annotate(NewLifecycle, fx.ParamTags(`name:"pg_pool"`)),
-// 	),
-// 	fx.Invoke(RegisterLifecycle),
-// )
+func genPoolTag(name string) string {
+	if name == "" {
+		return ""
+	}
+	return `name:"pg_pool_` + name + `"`
+}
