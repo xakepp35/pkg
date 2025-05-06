@@ -5,6 +5,7 @@ go 1.24
 require (
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/gofrs/uuid/v5 v5.3.1
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/rqlite/gorqlite v0.0.0-20250128004930-114c7828b55a
 	github.com/rs/zerolog v1.34.0
@@ -36,6 +37,6 @@ require (
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250303144028-a0af3efb3deb // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
