@@ -143,8 +143,11 @@ message Time {
 	option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
 		json_schema: {
 			type: STRING,
-			format: "date-time"
-		}
+			format: "date-time",
+			description: "represents a point in time independent of UTC time zone, in RFC 3339 or ISO 8601 format with nanosecond resolution",
+			example: "2025-05-06T18:09:02.999999999Z"
+		},
+		example: "2025-05-06T18:07:01.999999999Z"
 	};
 
   // Represents seconds of UTC time since Unix epoch

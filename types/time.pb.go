@@ -207,11 +207,11 @@ var File_time_proto protoreflect.FileDescriptor
 const file_time_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"time.proto\x12\tpkg.types\x1a.protoc-gen-openapiv2/options/annotations.proto\"M\n" +
+	"time.proto\x12\tpkg.types\x1a.protoc-gen-openapiv2/options/annotations.proto\"\x84\x02\n" +
 	"\x04Time\x12\x18\n" +
 	"\aseconds\x18\x01 \x01(\x03R\aseconds\x12\x14\n" +
-	"\x05nanos\x18\x02 \x01(\x05R\x05nanos:\x15\x92A\x12\n" +
-	"\x10\x9a\x02\x01\a\xa2\x02\tdate-timeB%Z#github.com/xakepp35/pkg/types;typesb\x06proto3"
+	"\x05nanos\x18\x02 \x01(\x05R\x05nanos:\xcb\x01\x92A\xc7\x01\n" +
+	"\xa4\x012rrepresents a point in time independent of UTC time zone, in RFC 3339 or ISO 8601 format with nanosecond resolutionJ\x1e2025-05-06T18:09:02.999999999Z\x9a\x02\x01\a\xa2\x02\tdate-time2\x1e2025-05-06T18:07:01.999999999ZB%Z#github.com/xakepp35/pkg/types;typesb\x06proto3"
 
 var (
 	file_time_proto_rawDescOnce sync.Once
