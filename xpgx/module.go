@@ -16,6 +16,7 @@ func NewModule(poolName string) fx.Option {
 	tagPool := genPoolTag(poolName)
 	tagTrc := `name:"pg_trc_` + poolName + `"`
 	tagPlc := `name:"pg_plc_` + poolName + `"`
+	tagTxm := `name:"pg_txm_` + poolName + `"`
 	return fx.Module("xpgx-"+poolName,
 		fx.Supply(
 			fx.Annotate(dsnEnv, fx.ResultTags(tagDsn)),
@@ -30,6 +31,9 @@ func NewModule(poolName string) fx.Option {
 		fx.Provide(
 			fx.Annotate(NewPool, fx.ParamTags(tagCfg), fx.ResultTags(tagPool)),
 			fx.Annotate(NewLifecycle, fx.ParamTags(tagPool), fx.ResultTags(tagPlc)),
+		),
+		fx.Provide(
+			fx.Annotate(NewTxManager, fx.ParamTags(tagPool), fx.ResultTags(tagTxm)),
 		),
 		fx.Invoke(
 			fx.Annotate(RegisterLifecycle, fx.ParamTags("", tagPlc)),
