@@ -1,0 +1,22 @@
+all: false
+dir: '{{.InterfaceDir}}'
+filename: '{{snakecase .InterfaceName}}_mock.go'
+force-file-write: true
+formatter: goimports
+log-level: info
+structname: '{{.Mock}}{{.InterfaceName}}'
+pkgname: '{{.SrcPackageName}}'
+recursive: true
+require-template-schema-exists: true
+template: testify
+template-schema: '{{.Template}}.schema.json'
+packages:
+  github.com/xakepp35/pkg/xpgx:
+    interfaces:
+      Transactional:
+  github.com/jackc/pgx/v5:
+    interfaces:
+      Tx:
+    config:
+      dir: ./xpgx
+      pkgname: xpgx
