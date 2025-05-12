@@ -1,21 +1,17 @@
 FROM golang:1.24 AS builder
 
-# Установка необходимых пакетов
 RUN apt-get update && apt-get install -y \
     curl \
     unzip \
-    make \
-    && rm -rf /var/lib/apt/lists/*
+    make
 
 WORKDIR /app
 
-ENV GOPRIVATE=git.muzpan.com
 ENV CGO_ENABLED=0
 
 COPY Makefile .
 
-RUN --mount=type=secret,id=netrc,target=/root/.netrc \
-    make prepare
+RUN make prepare
 
 FROM debian:bullseye-slim
 

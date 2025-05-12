@@ -2,11 +2,9 @@ PROTO_OUT?=api
 INPUT_PROTO?=proto
 PROTO_FILES=$(shell find $(INPUT_PROTO) -name "*.proto")
 
-GOPRIVATE:=git.muzpan.com
-
 OUT=$(PWD)/bin
-API_OUT=api-go
-GO_OUT=$(PWD)/$(API_OUT)
+GO_API_OUT?=api-go
+GO_OUT=$(PWD)/$(GO_API_OUT)
 PATH := $(OUT):$(PATH)
 
 PROTOC_VERSION := v30.2
