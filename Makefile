@@ -23,3 +23,25 @@ install_tools:
 	GOBIN=$(GOBIN) go install github.com/vektra/mockery/v3@v3.0.2
 	GOBIN=$(OUT) go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 .PHONY: install_tools
+
+
+INPUT_PROTO=proto
+API_OUT=api-go
+GO_OUT=$(PWD)/$(API_OUT)
+
+XPROTOC_GEN_VERSION:=v0.0.1
+
+docker_build:
+	docker build -t xprotoc-gen:$(XPROTOC_GEN_VERSION) ./xprotoc-gen
+.PHONY: docker_build
+
+copy_lib_from_docker:
+	docker create --name temp-xprotoc-gen xprotoc-gen
+	rm -rf lib
+	docker cp temp-xprotoc-gen:/app/lib lib
+	docker rm temp-xprotoc-gen
+.PHONY: copy_lib_from_docker
+
+docker_generate:
+	docker run --rm -v $(PWD)/$(INPUT_PROTO):/app/$(INPUT_PROTO) -v $(GO_OUT):/app/$(API_OUT) xprotoc-gen bash -c "make generate"
+.PHONY: docker_generate
