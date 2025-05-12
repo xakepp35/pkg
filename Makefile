@@ -29,8 +29,10 @@ INPUT_PROTO=proto
 API_OUT=api-go
 GO_OUT=$(PWD)/$(API_OUT)
 
+XPROTOC_GEN_VERSION:=v0.0.1
+
 docker_build:
-	docker build --secret id=netrc,src=$(HOME)/.netrc -t xprotoc-gen ./xprotoc-gen
+	docker build --secret id=netrc,src=$(HOME)/.netrc -t xprotoc-gen:$(XPROTOC_GEN_VERSION) ./xprotoc-gen
 .PHONY: docker_build
 
 copy_lib_from_docker:
