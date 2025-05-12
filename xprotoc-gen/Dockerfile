@@ -10,7 +10,7 @@ WORKDIR /app
 ENV CGO_ENABLED=0
 
 COPY Makefile .
-COPY tools .
+COPY tools tools/
 
 RUN make prepare
 RUN rm -rf tools
