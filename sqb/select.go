@@ -49,7 +49,14 @@ func (qb *QueryBuilder) Reset() {
 
 // Select adds a SELECT clause to the query with the specified columns.
 func (qb *QueryBuilder) Select(columns ...string) *QueryBuilder {
-	qb.query.WriteString("SELECT " + strings.Join(columns, ", ") + " ")
+	qb.query.WriteString("SELECT ")
+	for i, col := range columns {
+		if i > 0 {
+			qb.query.WriteString(", ")
+		}
+		qb.query.WriteString(col)
+	}
+	qb.query.WriteByte(' ')
 	return qb
 }
 
@@ -128,9 +135,9 @@ func (qb *QueryBuilder) Or() *QueryBuilder {
 	return qb
 }
 
-// Build finalizes the query construction and returns the SQL query string and the associated arguments.
+// Sql finalizes the query construction and returns the SQL query string and the associated arguments.
 // The query string will be trimmed of leading/trailing spaces.
-func (qb *QueryBuilder) Build() (string, []any) {
-	sql := strings.TrimSpace(qb.query.String())
+func (qb *QueryBuilder) Sql() (string, []any) {
+	sql := qb.query.String()
 	return sql, qb.args
 }
