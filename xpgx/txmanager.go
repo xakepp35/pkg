@@ -3,7 +3,9 @@ package xpgx
 import (
 	"context"
 	"fmt"
+
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/zerolog/log"
 )
 
@@ -26,7 +28,7 @@ type txManager struct {
 }
 
 // NewTxManager TxManager constructor
-func NewTxManager(pool Transactional) TxManager {
+func NewTxManager(pool *pgxpool.Pool) TxManager {
 	return &txManager{
 		pool: pool,
 	}
