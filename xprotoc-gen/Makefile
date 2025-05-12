@@ -12,7 +12,7 @@ PROTOC_ZIP     := protoc-30.2-linux-x86_64.zip
 
 # OPTIONS
 FIBER_OPTS_PATHS                    ?= source_relative
-FIBER_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/petara94/protoc-gen-go-fiber/utils
+FIBER_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/xakepp35/pkg/xprotoc-gen/utils
 FIBER_OPTS_JSON_UNMARSHAL_PACKAGE   ?= encoding/json
 FIBER_OPTS_GRPC_ERROR_FUNC          ?= HandleGRPCStatusError
 FIBER_OPTS_UNMARSHAL_ERROR_FUNC     ?= HandleUnmarshalError
@@ -29,11 +29,12 @@ PROTOC_GEN_GO_FIBER_OPTS = \
   disable_grpc_interceptor=$(FIBER_OPTS_DISABLE_GRPC_INTERCEPTOR)
 
 install_tools:
+	cd tools/protoc-gen-go-fiber && go build -o $(OUT)/protoc-gen-go-fiber .
+	cd tools/protoc-gen-ts-axios && go build -o $(OUT)/protoc-gen-ts-axios .
 	GOBIN=$(OUT) go install github.com/envoyproxy/protoc-gen-validate@v1.2.1
 	GOBIN=$(OUT) go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	GOBIN=$(OUT) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
 	GOBIN=$(OUT) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.26.3
-	GOBIN=$(OUT) go install github.com/petara94/protoc-gen-go-fiber@v0.0.2
 	GOBIN=$(OUT) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.26.3
 .PHONY: install_tools
 

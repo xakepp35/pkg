@@ -10,8 +10,10 @@ WORKDIR /app
 ENV CGO_ENABLED=0
 
 COPY Makefile .
+COPY tools ./tools
 
 RUN make prepare
+RUN rm -rf tools
 
 FROM debian:bullseye-slim
 
