@@ -12,6 +12,8 @@ ENV CGO_ENABLED=0
 COPY Makefile .
 COPY tools tools/
 
+RUN ls -R && ls tools && ls tools/protoc-gen-go-fiber
+
 RUN make prepare
 RUN rm -rf tools
 
