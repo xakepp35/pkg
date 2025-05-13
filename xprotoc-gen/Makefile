@@ -70,9 +70,9 @@ proto_download:
 	curl -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/main/src/google/protobuf/descriptor.proto -o lib/google/protobuf/descriptor.proto
 
 	# AnyKey types
-	curl -sSL https://raw.githubusercontent.com/xakepp35/pkg/refs/heads/main/types/empty.proto -o lib/pkg/types/empty.proto
-	curl -sSL https://raw.githubusercontent.com/xakepp35/pkg/refs/heads/main/types/struct.proto -o lib/pkg/types/struct.proto
-	curl -sSL https://raw.githubusercontent.com/xakepp35/pkg/refs/heads/main/types/time.proto -o lib/pkg/types/time.proto
+	curl -sSL https://raw.githubusercontent.com/xakepp35/pkg/refs/heads/main/src/pkg/types/empty.proto -o lib/pkg/types/empty.proto
+	curl -sSL https://raw.githubusercontent.com/xakepp35/pkg/refs/heads/main/src/pkg/types/struct.proto -o lib/pkg/types/struct.proto
+	curl -sSL https://raw.githubusercontent.com/xakepp35/pkg/refs/heads/main/src/pkg/types/time.proto -o lib/pkg/types/time.proto
 
 	# OpenAPI v2 options
 	curl -sSL https://raw.githubusercontent.com/grpc-ecosystem/grpc-gateway/master/protoc-gen-openapiv2/options/annotations.proto -o lib/protoc-gen-openapiv2/options/annotations.proto

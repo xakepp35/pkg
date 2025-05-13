@@ -32,7 +32,7 @@ syntax = "proto3";
 
 package pkg.types;
 
-option go_package = "github.com/xakepp35/pkg/types;types";
+option go_package = "github.com/xakepp35/pkg/src/pkg/types;types";
 
 // package google.protobuf;
 
