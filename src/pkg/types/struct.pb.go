@@ -32,7 +32,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v6.30.2
-// source: struct.proto
+// source: pkg/types/struct.proto
 
 // package google.protobuf;
 
@@ -85,11 +85,11 @@ func (x Null) String() string {
 }
 
 func (Null) Descriptor() protoreflect.EnumDescriptor {
-	return file_struct_proto_enumTypes[0].Descriptor()
+	return file_pkg_types_struct_proto_enumTypes[0].Descriptor()
 }
 
 func (Null) Type() protoreflect.EnumType {
-	return &file_struct_proto_enumTypes[0]
+	return &file_pkg_types_struct_proto_enumTypes[0]
 }
 
 func (x Null) Number() protoreflect.EnumNumber {
@@ -98,7 +98,7 @@ func (x Null) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Null.Descriptor instead.
 func (Null) EnumDescriptor() ([]byte, []int) {
-	return file_struct_proto_rawDescGZIP(), []int{0}
+	return file_pkg_types_struct_proto_rawDescGZIP(), []int{0}
 }
 
 // `Struct` represents a structured data value, consisting of fields
@@ -119,7 +119,7 @@ type Struct struct {
 
 func (x *Struct) Reset() {
 	*x = Struct{}
-	mi := &file_struct_proto_msgTypes[0]
+	mi := &file_pkg_types_struct_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -131,7 +131,7 @@ func (x *Struct) String() string {
 func (*Struct) ProtoMessage() {}
 
 func (x *Struct) ProtoReflect() protoreflect.Message {
-	mi := &file_struct_proto_msgTypes[0]
+	mi := &file_pkg_types_struct_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -144,7 +144,7 @@ func (x *Struct) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Struct.ProtoReflect.Descriptor instead.
 func (*Struct) Descriptor() ([]byte, []int) {
-	return file_struct_proto_rawDescGZIP(), []int{0}
+	return file_pkg_types_struct_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Struct) GetFields() map[string]*Value {
@@ -181,7 +181,7 @@ type Value struct {
 
 func (x *Value) Reset() {
 	*x = Value{}
-	mi := &file_struct_proto_msgTypes[1]
+	mi := &file_pkg_types_struct_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +193,7 @@ func (x *Value) String() string {
 func (*Value) ProtoMessage() {}
 
 func (x *Value) ProtoReflect() protoreflect.Message {
-	mi := &file_struct_proto_msgTypes[1]
+	mi := &file_pkg_types_struct_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +206,7 @@ func (x *Value) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Value.ProtoReflect.Descriptor instead.
 func (*Value) Descriptor() ([]byte, []int) {
-	return file_struct_proto_rawDescGZIP(), []int{1}
+	return file_pkg_types_struct_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *Value) GetKind() isValue_Kind {
@@ -361,7 +361,7 @@ type List struct {
 
 func (x *List) Reset() {
 	*x = List{}
-	mi := &file_struct_proto_msgTypes[2]
+	mi := &file_pkg_types_struct_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -373,7 +373,7 @@ func (x *List) String() string {
 func (*List) ProtoMessage() {}
 
 func (x *List) ProtoReflect() protoreflect.Message {
-	mi := &file_struct_proto_msgTypes[2]
+	mi := &file_pkg_types_struct_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -386,7 +386,7 @@ func (x *List) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use List.ProtoReflect.Descriptor instead.
 func (*List) Descriptor() ([]byte, []int) {
-	return file_struct_proto_rawDescGZIP(), []int{2}
+	return file_pkg_types_struct_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *List) GetList() []*Value {
@@ -396,12 +396,11 @@ func (x *List) GetList() []*Value {
 	return nil
 }
 
-var File_struct_proto protoreflect.FileDescriptor
+var File_pkg_types_struct_proto protoreflect.FileDescriptor
 
-const file_struct_proto_rawDesc = "" +
+const file_pkg_types_struct_proto_rawDesc = "" +
 	"\n" +
-	"\fstruct.proto\x12\tpkg.types\x1a\n" +
-	"time.proto\"\x8c\x01\n" +
+	"\x16pkg/types/struct.proto\x12\tpkg.types\x1a\x14pkg/types/time.proto\"\x8c\x01\n" +
 	"\x06Struct\x125\n" +
 	"\x06fields\x18\x01 \x03(\v2\x1d.pkg.types.Struct.FieldsEntryR\x06fields\x1aK\n" +
 	"\vFieldsEntry\x12\x10\n" +
@@ -425,23 +424,23 @@ const file_struct_proto_rawDesc = "" +
 	"\x04list\x18\x01 \x03(\v2\x10.pkg.types.ValueR\x04list*\x16\n" +
 	"\x04Null\x12\x0e\n" +
 	"\n" +
-	"NULL_VALUE\x10\x00B%Z#github.com/xakepp35/pkg/types;typesb\x06proto3"
+	"NULL_VALUE\x10\x00B-Z+github.com/xakepp35/pkg/src/pkg/types;typesb\x06proto3"
 
 var (
-	file_struct_proto_rawDescOnce sync.Once
-	file_struct_proto_rawDescData []byte
+	file_pkg_types_struct_proto_rawDescOnce sync.Once
+	file_pkg_types_struct_proto_rawDescData []byte
 )
 
-func file_struct_proto_rawDescGZIP() []byte {
-	file_struct_proto_rawDescOnce.Do(func() {
-		file_struct_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_struct_proto_rawDesc), len(file_struct_proto_rawDesc)))
+func file_pkg_types_struct_proto_rawDescGZIP() []byte {
+	file_pkg_types_struct_proto_rawDescOnce.Do(func() {
+		file_pkg_types_struct_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_pkg_types_struct_proto_rawDesc), len(file_pkg_types_struct_proto_rawDesc)))
 	})
-	return file_struct_proto_rawDescData
+	return file_pkg_types_struct_proto_rawDescData
 }
 
-var file_struct_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_struct_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
-var file_struct_proto_goTypes = []any{
+var file_pkg_types_struct_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_pkg_types_struct_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_pkg_types_struct_proto_goTypes = []any{
 	(Null)(0),      // 0: pkg.types.Null
 	(*Struct)(nil), // 1: pkg.types.Struct
 	(*Value)(nil),  // 2: pkg.types.Value
@@ -449,7 +448,7 @@ var file_struct_proto_goTypes = []any{
 	nil,            // 4: pkg.types.Struct.FieldsEntry
 	(*Time)(nil),   // 5: pkg.types.Time
 }
-var file_struct_proto_depIdxs = []int32{
+var file_pkg_types_struct_proto_depIdxs = []int32{
 	4, // 0: pkg.types.Struct.fields:type_name -> pkg.types.Struct.FieldsEntry
 	0, // 1: pkg.types.Value.null_value:type_name -> pkg.types.Null
 	1, // 2: pkg.types.Value.struct_value:type_name -> pkg.types.Struct
@@ -464,13 +463,13 @@ var file_struct_proto_depIdxs = []int32{
 	0, // [0:7] is the sub-list for field type_name
 }
 
-func init() { file_struct_proto_init() }
-func file_struct_proto_init() {
-	if File_struct_proto != nil {
+func init() { file_pkg_types_struct_proto_init() }
+func file_pkg_types_struct_proto_init() {
+	if File_pkg_types_struct_proto != nil {
 		return
 	}
-	file_time_proto_init()
-	file_struct_proto_msgTypes[1].OneofWrappers = []any{
+	file_pkg_types_time_proto_init()
+	file_pkg_types_struct_proto_msgTypes[1].OneofWrappers = []any{
 		(*Value_NullValue)(nil),
 		(*Value_NumberValue)(nil),
 		(*Value_StringValue)(nil),
@@ -484,18 +483,18 @@ func file_struct_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_struct_proto_rawDesc), len(file_struct_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pkg_types_struct_proto_rawDesc), len(file_pkg_types_struct_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_struct_proto_goTypes,
-		DependencyIndexes: file_struct_proto_depIdxs,
-		EnumInfos:         file_struct_proto_enumTypes,
-		MessageInfos:      file_struct_proto_msgTypes,
+		GoTypes:           file_pkg_types_struct_proto_goTypes,
+		DependencyIndexes: file_pkg_types_struct_proto_depIdxs,
+		EnumInfos:         file_pkg_types_struct_proto_enumTypes,
+		MessageInfos:      file_pkg_types_struct_proto_msgTypes,
 	}.Build()
-	File_struct_proto = out.File
-	file_struct_proto_goTypes = nil
-	file_struct_proto_depIdxs = nil
+	File_pkg_types_struct_proto = out.File
+	file_pkg_types_struct_proto_goTypes = nil
+	file_pkg_types_struct_proto_depIdxs = nil
 }

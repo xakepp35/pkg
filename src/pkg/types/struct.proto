@@ -34,7 +34,7 @@ syntax = "proto3";
 
 package pkg.types;
 
-option go_package = "github.com/xakepp35/pkg/types;types";
+option go_package = "github.com/xakepp35/pkg/src/pkg/types;types";
 
 //option csharp_namespace = "Google.Protobuf.WellKnownTypes";
 //option cc_enable_arenas = true;
@@ -44,7 +44,7 @@ option go_package = "github.com/xakepp35/pkg/types;types";
 //option objc_class_prefix = "GPB";
 
 // import "google/protobuf/timestamp.proto";
-import "time.proto";
+import "pkg/types/time.proto";
 
 // `Struct` represents a structured data value, consisting of fields
 // which map to dynamically typed values. In some languages, `Struct`
