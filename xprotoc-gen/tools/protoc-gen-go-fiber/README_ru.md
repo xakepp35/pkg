@@ -70,7 +70,6 @@ plugins:
       - grpc_error_handle_func=HandleGRPCStatusError
       - unmarshal_error_handle_func=HandleUnmarshalError
       - validation_error_handle_func=HandleValidationError
-      - disable_grpc_interceptor=false
 ```
 
 3. В приложении Fiber зарегистрируй маршруты:
@@ -89,7 +88,6 @@ RegisterGreeterServiceFiberRoutes(app, serverImpl, grpcInterceptor)
 | `grpc_error_handle_func`       | Имя функции для обработки gRPC-ошибок                | `HandleGRPCStatusError`                         |
 | `unmarshal_error_handle_func`  | Имя функции для обработки ошибок десериализации JSON | `HandleUnmarshalError`                          |
 | `validation_error_handle_func` | Имя функции для обработки ошибок валидации           | `HandleValidationError`                         |
-| `disable_grpc_interceptor`     | Отключить генерацию gRPC интерцептора                | `false`                                         |
 
 ## Требования
 
@@ -108,7 +106,7 @@ RegisterGreeterServiceFiberRoutes(app, serverImpl, grpcInterceptor)
     - Парсит тело запроса (если требуется).
     - Валидирует входные данные (`Validate()`).
     - Пробрасывает HTTP-заголовки в контекст.
-    - Вызывает метод gRPC-сервера через переданный interceptor(вкл по дефолту).
+    - Вызывает метод gRPC-сервера через переданный interceptor(если не nil).
     - Возвращает JSON-ответ или ошибку.
 
 ## Лицензия

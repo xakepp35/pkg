@@ -8,9 +8,7 @@ import (
 func genServiceRouter(g *protogen.GeneratedFile, service *protogen.Service) {
 	g.P("type ", serviceRouterStructName(service), " struct {")
 	g.P("server ", service.GoName, "Server")
-	if !*flagDisableGrpcInterceptor {
-		g.P("interceptor ", grpcImport.Ident("UnaryServerInterceptor"))
-	}
+	g.P("interceptor ", grpcImport.Ident("UnaryServerInterceptor"))
 	g.P("}")
 	g.P()
 }
@@ -18,9 +16,7 @@ func genServiceRouter(g *protogen.GeneratedFile, service *protogen.Service) {
 func genServiceRouterDeclaration(g *protogen.GeneratedFile, service *protogen.Service) {
 	g.P("router := &", serviceRouterStructName(service), "{")
 	g.P("server: server,")
-	if !*flagDisableGrpcInterceptor {
-		g.P("interceptor: interceptor,")
-	}
+	g.P("interceptor: interceptor,")
 	g.P("}")
 	g.P()
 }

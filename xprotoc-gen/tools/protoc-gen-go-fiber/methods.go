@@ -67,19 +67,24 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 }
 
 func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
-	if !*flagDisableGrpcInterceptor {
-		g.P("handler := func(ctx context.Context, req any) (any, error) {")
-		g.P("return r.server.", method.GoName, "(ctx, req.(*", method.Input.GoIdent, "))")
-		g.P("}")
-		g.P("info := &", grpcImport.Ident("UnaryServerInfo"), "{")
-		g.P("Server: r.server,")
-		g.P(fmt.Sprintf(`FullMethod: %s_%s_FullMethodName,`, method.Parent.GoName, method.GoName))
-		g.P("}")
-		g.P()
-		g.P("resp, err := r.interceptor(ctx, &req, info, handler)")
-	} else {
-		g.P("resp, err := r.server.", method.GoName, "(ctx, &req)")
-	}
+	g.P("var (")
+	g.P("resp any")
+	g.P("err error")
+	g.P(")")
+
+	g.P("if r.interceptor != nil {")
+	g.P("handler := func(ctx context.Context, req any) (any, error) {")
+	g.P("return r.server.", method.GoName, "(ctx, req.(*", method.Input.GoIdent, "))")
+	g.P("}")
+	g.P("info := &", grpcImport.Ident("UnaryServerInfo"), "{")
+	g.P("Server: r.server,")
+	g.P(fmt.Sprintf(`FullMethod: %s_%s_FullMethodName,`, method.Parent.GoName, method.GoName))
+	g.P("}")
+	g.P()
+	g.P("resp, err = r.interceptor(ctx, &req, info, handler)")
+	g.P("} else {")
+	g.P("resp, err = r.server.", method.GoName, "(ctx, &req)")
+	g.P("}")
 
 	g.P("	if err != nil { return ", errorHandlersImport.Ident(*flagGrpcErrorHandleFunc), "(c, err) }\n")
 
@@ -95,10 +100,12 @@ func genFiberMethodRote(g *protogen.GeneratedFile, method *protogen.Method) {
 
 	methodType, httpPath := grpcOptionToMethodAndPathString(opts)
 	if httpPath == "/" {
-		httpPath += string(method.Parent.Desc.FullName()) + "/" + string(method.Desc.Name())
+		httpPath = fmt.Sprintf(`%s_%s_FullMethodName`, method.Parent.GoName, method.GoName)
+	} else {
+		httpPath = `"` + httpPath + `"`
 	}
 
-	g.P("	app.", methodType, `("`, httpPath, `", router.`, genRouteMethodName(method), `)`)
+	g.P("	app.", methodType, `(`, httpPath, `, router.`, genRouteMethodName(method), `)`)
 }
 
 // grpcOptionToMethodAndPathString узнает метод из google.api.http

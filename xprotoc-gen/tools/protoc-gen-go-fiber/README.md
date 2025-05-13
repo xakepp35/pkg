@@ -69,7 +69,6 @@ plugins:
       - grpc_error_handle_func=HandleGRPCStatusError
       - unmarshal_error_handle_func=HandleUnmarshalError
       - validation_error_handle_func=HandleValidationError
-      - disable_grpc_interceptor=false
 ```
 
 3. Register the routes in your Fiber app:
@@ -88,7 +87,6 @@ RegisterGreeterServiceFiberRoutes(app, serverImpl, grpcInterceptor)
 | `grpc_error_handle_func`       | Name of the gRPC error handler function           | `HandleGRPCStatusError`                         |
 | `unmarshal_error_handle_func`  | Name of the JSON unmarshal error handler function | `HandleUnmarshalError`                          |
 | `validation_error_handle_func` | Name of the validation error handler function     | `HandleValidationError`                         |
-| `disable_grpc_interceptor`     | Disable gRPC interceptor generation               | `false`                                         |
 
 ## Requirements
 
@@ -107,7 +105,7 @@ RegisterGreeterServiceFiberRoutes(app, serverImpl, grpcInterceptor)
     * Parses the request body (if applicable).
     * Validates input (`Validate()`).
     * Injects HTTP headers into the context.
-    * Calls the gRPC server method using the provided interceptor (enabled by default).
+    * Calls the gRPC server method using the provided interceptor (if != nil).
     * Returns a JSON response or an error.
 
 ## License

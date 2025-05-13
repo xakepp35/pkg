@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"google.golang.org/protobuf/compiler/protogen"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 func generateFile(plugin *protogen.Plugin) error {
 	flagInit()
+	plugin.SupportedFeatures = uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
 
 	for _, f := range plugin.Files {
 		if !f.Generate || len(f.Services) == 0 {
