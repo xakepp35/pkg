@@ -26,6 +26,15 @@ PROTOC_GEN_GO_FIBER_OPTS = \
   unmarshal_error_handle_func=$(FIBER_OPTS_UNMARSHAL_ERROR_FUNC) \
   validation_error_handle_func=$(FIBER_OPTS_VALIDATION_ERROR_FUNC)
 
+OPENAPI_V2_OPT_OUTPUT_FORMAT ?= yaml
+OPENAPI_V2_OPT_DISABLE_DEFAULT_ERRORS ?= true
+OPENAPI_V2_OPT_ENUMS_AS_INTS ?= false
+
+OPENAPI_V2_OPT = \
+	output_format=$(OPENAPI_V2_OPT_OUTPUT_FORMAT) \
+	disable_default_errors=$(OPENAPI_V2_OPT_DISABLE_DEFAULT_ERRORS) \
+	enums_as_ints=$(OPENAPI_V2_OPT_ENUMS_AS_INTS)
+
 install_tools:
 	cd tools/protoc-gen-go-fiber && go build -o $(OUT)/protoc-gen-go-fiber .
 	cd tools/protoc-gen-ts-axios && go build -o $(OUT)/protoc-gen-ts-axios .
@@ -41,7 +50,8 @@ proto_gen:
              --go_out=$(GO_OUT) --go_opt=paths=source_relative \
              --go-grpc_out=$(GO_OUT) --go-grpc_opt=paths=source_relative \
              --grpc-gateway_out=$(GO_OUT) --grpc-gateway_opt=paths=source_relative \
-             --openapiv2_out=$(GO_OUT) --openapiv2_opt=output_format=yaml,disable_default_errors=true \
+             --openapiv2_out=$(GO_OUT) \
+             $(foreach opt,$(OPENAPI_V2_OPT),--openapiv2_opt=$(opt)) \
              --validate_out=$(GO_OUT) --validate_opt=paths=source_relative,lang=go \
              --go-fiber_out=$(GO_OUT) \
              $(foreach opt,$(PROTOC_GEN_GO_FIBER_OPTS),--go-fiber_opt=$(opt)) \
