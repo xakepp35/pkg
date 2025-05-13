@@ -17,7 +17,6 @@ FIBER_OPTS_JSON_UNMARSHAL_PACKAGE   ?= encoding/json
 FIBER_OPTS_GRPC_ERROR_FUNC          ?= HandleGRPCStatusError
 FIBER_OPTS_UNMARSHAL_ERROR_FUNC     ?= HandleUnmarshalError
 FIBER_OPTS_VALIDATION_ERROR_FUNC    ?= HandleValidationError
-FIBER_OPTS_DISABLE_GRPC_INTERCEPTOR ?= false
 
 PROTOC_GEN_GO_FIBER_OPTS = \
   paths=$(FIBER_OPTS_PATHS) \
@@ -25,8 +24,7 @@ PROTOC_GEN_GO_FIBER_OPTS = \
   json_unmarshal_package=$(FIBER_OPTS_JSON_UNMARSHAL_PACKAGE) \
   grpc_error_handle_func=$(FIBER_OPTS_GRPC_ERROR_FUNC) \
   unmarshal_error_handle_func=$(FIBER_OPTS_UNMARSHAL_ERROR_FUNC) \
-  validation_error_handle_func=$(FIBER_OPTS_VALIDATION_ERROR_FUNC) \
-  disable_grpc_interceptor=$(FIBER_OPTS_DISABLE_GRPC_INTERCEPTOR)
+  validation_error_handle_func=$(FIBER_OPTS_VALIDATION_ERROR_FUNC)
 
 install_tools:
 	cd tools/protoc-gen-go-fiber && go build -o $(OUT)/protoc-gen-go-fiber .
