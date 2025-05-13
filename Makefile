@@ -4,9 +4,9 @@ PATH := $(PATH):$(GOBIN)
 generate_proto:
 	protoc \
 		-I lib \
-		-I src \
-    	--go_out=src --go_opt=paths=source_relative \
-        $(shell find src -name "*.proto")
+		-I types \
+    	--go_out=types --go_opt=paths=source_relative \
+        $(shell find types -name "*.proto") 
 .PHONY: generate_proto
 
 generate_mocks:

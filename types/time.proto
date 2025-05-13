@@ -36,7 +36,7 @@ package pkg.types;
 
 import "protoc-gen-openapiv2/options/annotations.proto";
 
-option go_package = "github.com/xakepp35/pkg/src/pkg/types;types";
+option go_package = "github.com/xakepp35/pkg/types;types";
 
 // option csharp_namespace = "Google.Protobuf.WellKnownTypes";
 // option cc_enable_arenas = true;
