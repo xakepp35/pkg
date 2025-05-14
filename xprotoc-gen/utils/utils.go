@@ -47,7 +47,7 @@ func HandleGRPCStatusError(c *fiber.Ctx, err error) error {
 		httpStatus = fiber.StatusInternalServerError
 	}
 
-	return c.Status(httpStatus).JSON(s)
+	return c.Status(httpStatus).JSON(s.Proto())
 }
 
 var (
