@@ -24,6 +24,22 @@ install_tools:
 	GOBIN=$(OUT) go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 .PHONY: install_tools
 
+FIBER_TOOL_VERSION:=0.0.4
+tools_download:
+	curl -L https://github.com/petara94/protoc-gen-go-fiber/archive/refs/tags/v$(FIBER_TOOL_VERSION).zip -o repo.zip
+	rm -rf tools/protoc-gen-go-fiber
+	cd xprotoc-gen/tools && unzip ../../repo.zip
+	rm repo.zip
+
+	rm -rf xprotoc-gen/tools/protoc-gen-go-fiber
+	mv xprotoc-gen/tools/protoc-gen-go-fiber-$(FIBER_TOOL_VERSION) xprotoc-gen/tools/protoc-gen-go-fiber
+	rm -rf xprotoc-gen/tools/protoc-gen-go-fiber/.git
+	rm -rf xprotoc-gen/tools/protoc-gen-go-fiber/example
+	rm -rf xprotoc-gen/utils
+	mv xprotoc-gen/tools/protoc-gen-go-fiber/utils xprotoc-gen/
+
+.PHONY: tools_download
+
 
 INPUT_PROTO=proto
 API_OUT=api-go
