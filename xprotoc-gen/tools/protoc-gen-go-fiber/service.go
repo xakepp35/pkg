@@ -3,6 +3,10 @@ package main
 import "google.golang.org/protobuf/compiler/protogen"
 
 func genService(g *protogen.GeneratedFile, service *protogen.Service) {
+	if len(service.Methods) == 0 {
+		return
+	}
+
 	genServiceRouter(g, service)
 
 	g.P("func Register", service.GoName, "FiberRoutes(app *", fiberImport.Ident("App"), ", server ", service.GoName, "Server, interceptor grpc.UnaryServerInterceptor) {")
