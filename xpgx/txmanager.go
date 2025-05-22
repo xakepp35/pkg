@@ -2,6 +2,7 @@ package xpgx
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -45,8 +46,10 @@ func (t txManager) DoWithOptions(ctx context.Context, opt pgx.TxOptions, exec Tx
 		return fmt.Errorf("transaction begin: %w", err)
 	}
 	defer func() {
-		if err := tx.Rollback(ctx); err != nil {
-			log.Warn().Err(err).Msg("rollback transaction")
+		if err = tx.Rollback(ctx); err != nil {
+			if !errors.Is(err, pgx.ErrTxClosed) {
+				log.Warn().Err(err).Msg("rollback transaction")
+			}
 		}
 	}()
 
