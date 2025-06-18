@@ -37,6 +37,7 @@ OPENAPI_V2_OPT = \
 
 install_tools:
 	cd tools/protoc-gen-go-fiber && go build -o $(OUT)/protoc-gen-go-fiber .
+	cd tools/protoc-gen-go-fasthttp  && go build -o $(OUT)/protoc-gen-go-fasthttp .
 	cd tools/protoc-gen-ts-axios && go build -o $(OUT)/protoc-gen-ts-axios .
 	GOBIN=$(OUT) go install github.com/envoyproxy/protoc-gen-validate@v1.2.1
 	GOBIN=$(OUT) go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -55,6 +56,8 @@ proto_gen:
              --validate_out=$(GO_OUT) --validate_opt=paths=source_relative,lang=go \
              --go-fiber_out=$(GO_OUT) \
              $(foreach opt,$(PROTOC_GEN_GO_FIBER_OPTS),--go-fiber_opt=$(opt)) \
+			 --go-fasthttp_out=$(GO_OUT) \
+			 $(foreach opt,$(PROTOC_GEN_GO_FIBER_OPTS),--go-fasthttp_opt=$(opt)) \
              $(PROTO_FILES)
 .PHONY: proto_gen
 

@@ -24,9 +24,9 @@ func generateFile(plugin *protogen.Plugin) error {
 
 		genImports(g)
 
-		// for _, service := range f.Services {
-		// 	genService(g, service)
-		// }
+		for _, service := range f.Services {
+			genService(g, service)
+		}
 	}
 
 	return nil
@@ -35,6 +35,7 @@ func generateFile(plugin *protogen.Plugin) error {
 func genImports(g *protogen.GeneratedFile) {
 	g.Import(contextImport)
 	g.Import(fasthttpImport)
+	g.Import(fasthttpRouterImport)
 	g.Import(grpcImport)
 	g.Import(grpcMetadataImport)
 	g.Import(errorHandlersImport)

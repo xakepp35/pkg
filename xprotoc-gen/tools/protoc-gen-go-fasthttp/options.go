@@ -7,12 +7,12 @@ import (
 )
 
 const (
-	defaultFlagErrorHandlersPackage = "github.com/petara94/protoc-gen-go-fiber/utils"
+	defaultFlagErrorHandlersPackage = "github.com/vnlozan/pkg/xprotoc-gen/utils"
 	defaultJsonUnmarshalPackage     = "encoding/json"
 )
 
 var (
-	flags                         = flag.NewFlagSet("protoc-gen-go-fiber", flag.ExitOnError)
+	flags                         = flag.NewFlagSet("protoc-gen-go-fasthttp", flag.ExitOnError)
 	flagErrorHandlersPackage      = flags.String("error_handlers_package", defaultFlagErrorHandlersPackage, "package with error handlers funcs")
 	flagJsonUnmarshalPackage      = flags.String("json_unmarshal_package", defaultJsonUnmarshalPackage, "package with json unmarshalers")
 	flagGrpcErrorHandleFunc       = flags.String("grpc_error_handle_func", "HandleGRPCStatusError", "func name for handle grpc error")
