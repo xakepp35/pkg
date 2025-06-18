@@ -14,7 +14,7 @@ func genServiceRouter(g *protogen.GeneratedFile, service *protogen.Service) {
 	g.P()
 }
 func genServiceRouterDeclaration(g *protogen.GeneratedFile, service *protogen.Service) {
-	g.P("router := &", serviceRouterStructName(service), "{")
+	g.P("h := &", serviceRouterStructName(service), "{")
 	g.P("server: server,")
 	g.P("interceptor: interceptor,")
 	g.P("}")

@@ -13,7 +13,7 @@ import (
 )
 
 func genMethod(g *protogen.GeneratedFile, method *protogen.Method) {
-	g.P("func (r *", serviceRouterStructName(method.Parent), ")", genRouteMethodName(method), `(c *`, fasthttpImport.Ident("RequestCtx"), `) error {`)
+	g.P("func (r *", serviceRouterStructName(method.Parent), ")", genRouteMethodName(method), `(c *`, fasthttpImport.Ident("RequestCtx"), `) {`)
 
 	g.P("ctx, cancel := ", contextImport.Ident("WithCancel"), "(c)")
 	g.P("defer cancel()\n")
@@ -88,14 +88,14 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 
 	g.P("if err != nil {")
 	g.P(errorHandlersImport.Ident(*flagGrpcErrorHandleFunc), "(c, err)")
-	g.P("return err")
+	g.P("return")
 	g.P("}")
 	g.P()
 
 	g.P("data, mErr := ", jsonUnmarshalImport.Ident("Marshal"), "(resp)")
 	g.P("if mErr != nil {")
 	g.P(errorHandlersImport.Ident(*flagGrpcErrorHandleFunc), "(c, mErr)")
-	g.P("return mErr")
+	g.P("return")
 	g.P("}")
 	g.P("c.SetContentType(\"application/json\")")
 	g.P("c.SetStatusCode(", fasthttpImport.Ident("StatusOK"), ")")
@@ -116,7 +116,7 @@ func genFastHTTPMethodRoute(g *protogen.GeneratedFile, method *protogen.Method) 
 		httpPath = `"` + httpPath + `"`
 	}
 
-	g.P("	r.", methodType, `(`, httpPath, `, router.`, genRouteMethodName(method), `)`)
+	g.P("	r.", methodType, `(`, httpPath, `, h.`, genRouteMethodName(method), `)`)
 }
 
 func grpcOptionToMethodAndPathString(opts *descriptorpb.MethodOptions) (string, string) {
@@ -126,17 +126,17 @@ func grpcOptionToMethodAndPathString(opts *descriptorpb.MethodOptions) (string, 
 	if httpRule, ok := ext.(*annotations.HttpRule); ok {
 		switch pattern := httpRule.Pattern.(type) {
 		case *annotations.HttpRule_Get:
-			methodType, path = "Get", pattern.Get
+			methodType, path = "GET", pattern.Get
 		case *annotations.HttpRule_Post:
-			methodType, path = "Post", pattern.Post
+			methodType, path = "POST", pattern.Post
 		case *annotations.HttpRule_Put:
-			methodType, path = "Put", pattern.Put
+			methodType, path = "PUT", pattern.Put
 		case *annotations.HttpRule_Patch:
-			methodType, path = "Patch", pattern.Patch
+			methodType, path = "PATCH", pattern.Patch
 		case *annotations.HttpRule_Delete:
-			methodType, path = "Delete", pattern.Delete
+			methodType, path = "DELETE", pattern.Delete
 		default:
-			methodType, path = "Post", "/"
+			methodType, path = "POST", "/"
 		}
 	}
 	return methodType, path
