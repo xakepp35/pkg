@@ -10,7 +10,7 @@ PATH := $(OUT):$(PATH)
 PROTOC_VERSION := v30.2
 PROTOC_ZIP     := protoc-30.2-linux-x86_64.zip
 
-# OPTIONS
+# FIBER OPTIONS
 FIBER_OPTS_PATHS                    ?= source_relative
 FIBER_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/xakepp35/pkg/xprotoc-gen/utils
 FIBER_OPTS_JSON_UNMARSHAL_PACKAGE   ?= encoding/json
@@ -25,6 +25,23 @@ PROTOC_GEN_GO_FIBER_OPTS = \
   grpc_error_handle_func=$(FIBER_OPTS_GRPC_ERROR_FUNC) \
   unmarshal_error_handle_func=$(FIBER_OPTS_UNMARSHAL_ERROR_FUNC) \
   validation_error_handle_func=$(FIBER_OPTS_VALIDATION_ERROR_FUNC)
+
+# FASTHTTP OPTIONS
+FASTHTTP_OPTS_PATHS                    ?= source_relative
+FASTHTTP_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/vnlozan/pkg/xprotoc-gen/utils
+FASTHTTP_OPTS_JSON_UNMARSHAL_PACKAGE   ?= encoding/json
+FASTHTTP_OPTS_GRPC_ERROR_FUNC          ?= FastHTTPHandleGRPCStatusError
+FASTHTTP_OPTS_UNMARSHAL_ERROR_FUNC     ?= FastHttpHandleUnmarshalError
+FASTHTTP_OPTS_VALIDATION_ERROR_FUNC    ?= FastHttpHandleValidationError
+
+PROTOC_GEN_GO_FASTHTTP_OPTS = \
+  paths=$(FASTHTTP_OPTS_PATHS) \
+  error_handlers_package=$(FASTHTTP_OPTS_ERROR_HANDLERS_PACKAGE) \
+  json_unmarshal_package=$(FASTHTTP_OPTS_JSON_UNMARSHAL_PACKAGE) \
+  grpc_error_handle_func=$(FASTHTTP_OPTS_GRPC_ERROR_FUNC) \
+  unmarshal_error_handle_func=$(FASTHTTP_OPTS_UNMARSHAL_ERROR_FUNC) \
+  validation_error_handle_func=$(FASTHTTP_OPTS_VALIDATION_ERROR_FUNC)
+
 
 OPENAPI_V2_OPT_OUTPUT_FORMAT ?= yaml
 OPENAPI_V2_OPT_DISABLE_DEFAULT_ERRORS ?= true
@@ -57,7 +74,7 @@ proto_gen:
              --go-fiber_out=$(GO_OUT) \
              $(foreach opt,$(PROTOC_GEN_GO_FIBER_OPTS),--go-fiber_opt=$(opt)) \
 			 --go-fasthttp_out=$(GO_OUT) \
-			 $(foreach opt,$(PROTOC_GEN_GO_FIBER_OPTS),--go-fasthttp_opt=$(opt)) \
+			 $(foreach opt,$(PROTOC_GEN_GO_FASTHTTP_OPTS),--go-fasthttp_opt=$(opt)) \
              $(PROTO_FILES)
 .PHONY: proto_gen
 

@@ -1,14 +1,25 @@
 package utils
 
 import (
+	"encoding/json"
+
 	"github.com/gofiber/fiber/v2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	fasthttp "github.com/valyala/fasthttp"
 )
 
 type ErrorMessage struct {
 	Message string `json:"message"`
 }
+
+/*-------------------------------------------------------- FIBER --------------------------------------------------------*/
+
+var (
+	HandleUnmarshalError  = HandleNonGrpcError
+	HandleValidationError = HandleNonGrpcError
+)
 
 // HandleGRPCStatusError default handler for grpc errors
 func HandleGRPCStatusError(c *fiber.Ctx, err error) error {
@@ -50,11 +61,6 @@ func HandleGRPCStatusError(c *fiber.Ctx, err error) error {
 	return c.Status(httpStatus).JSON(s.Proto())
 }
 
-var (
-	HandleUnmarshalError  = HandleNonGrpcError
-	HandleValidationError = HandleNonGrpcError
-)
-
 // HandleNonGrpcError default handler for non grpc errors
 func HandleNonGrpcError(c *fiber.Ctx, err error) error {
 	if err == nil {
@@ -63,4 +69,74 @@ func HandleNonGrpcError(c *fiber.Ctx, err error) error {
 	}
 
 	return c.Status(fiber.StatusBadRequest).JSON(ErrorMessage{Message: err.Error()})
+}
+
+/*-------------------------------------------------------- FASTHTTP --------------------------------------------------------*/
+
+var (
+	FastHttpHandleUnmarshalError  = FastHTTPHandleNonGrpcError
+	FastHttpHandleValidationError = FastHTTPHandleNonGrpcError
+)
+
+func writeJSON(c *fasthttp.RequestCtx, statusCode int, v any) error {
+	data, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	c.Response.Header.SetContentType("application/json")
+	c.SetStatusCode(statusCode)
+	_, wErr := c.Write(data) // fasthttp пишет тело и возвращает ошибку записи
+	return wErr
+}
+
+func FastHTTPHandleGRPCStatusError(c *fasthttp.RequestCtx, err error) error {
+	// успех без ошибки → пустой JSON
+	if err == nil {
+		c.Response.Header.SetContentType("application/json")
+		c.SetStatusCode(fasthttp.StatusOK)
+		_, wErr := c.Write([]byte("{}"))
+		return wErr
+	}
+
+	s, ok := status.FromError(err)
+	if !ok { // не-gRPC-ошибка
+		return writeJSON(c, fasthttp.StatusInternalServerError, ErrorMessage{Message: err.Error()})
+	}
+
+	// маппинг grpc-кодов → HTTP
+	var httpStatus int
+	switch s.Code() {
+	case codes.InvalidArgument:
+		httpStatus = fasthttp.StatusBadRequest
+	case codes.NotFound:
+		httpStatus = fasthttp.StatusNotFound
+	case codes.AlreadyExists:
+		httpStatus = fasthttp.StatusConflict
+	case codes.PermissionDenied:
+		httpStatus = fasthttp.StatusForbidden
+	case codes.Unauthenticated:
+		httpStatus = fasthttp.StatusUnauthorized
+	case codes.ResourceExhausted:
+		httpStatus = fasthttp.StatusTooManyRequests
+	case codes.Unimplemented:
+		httpStatus = fasthttp.StatusNotImplemented
+	case codes.Internal:
+		httpStatus = fasthttp.StatusInternalServerError
+	case codes.Unavailable:
+		httpStatus = fasthttp.StatusServiceUnavailable
+	default:
+		httpStatus = fasthttp.StatusInternalServerError
+	}
+
+	return writeJSON(c, httpStatus, s.Proto())
+}
+
+func FastHTTPHandleNonGrpcError(c *fasthttp.RequestCtx, err error) error {
+	if err == nil {
+		c.Response.Header.SetContentType("application/json")
+		c.SetStatusCode(fasthttp.StatusOK)
+		_, wErr := c.Write([]byte("{}"))
+		return wErr
+	}
+	return writeJSON(c, fasthttp.StatusBadRequest, ErrorMessage{Message: err.Error()})
 }

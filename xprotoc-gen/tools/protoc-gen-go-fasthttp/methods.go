@@ -13,13 +13,13 @@ import (
 )
 
 func genMethod(g *protogen.GeneratedFile, method *protogen.Method) {
-	g.P("func (r *", serviceRouterStructName(method.Parent), ")", genRouteMethodName(method), `(c *`, fasthttpImport.Ident("Ctx"), `) error {`)
+	g.P("func (r *", serviceRouterStructName(method.Parent), ")", genRouteMethodName(method), `(c *`, fasthttpImport.Ident("RequestCtx"), `) error {`)
 
-	g.P("ctx, cancel := ", contextImport.Ident("WithCancel"), "(c.Context())")
+	g.P("ctx, cancel := ", contextImport.Ident("WithCancel"), "(c)")
 	g.P("defer cancel()\n")
 
 	g.P("md := ", grpcMetadataImport.Ident("New"), "(nil)")
-	g.P("c.Request().Header.VisitAll(func(key, value []byte) {")
+	g.P("c.Request.Header.VisitAll(func(key, value []byte) {")
 	g.P("md.Append(string(key), string(value))")
 	g.P("})")
 	g.P()
@@ -45,7 +45,7 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 
 	// use marshaller if we need
 	if hasExportedField {
-		g.P("if err := ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.Body(), &req); err != nil {")
+		g.P("if err := ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
 		g.P("	return ", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
 		g.P("}")
 		g.P()
@@ -81,25 +81,25 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("Server: r.server,")
 	g.P(fmt.Sprintf(`FullMethod: %s_%s_FullMethodName,`, method.Parent.GoName, method.GoName))
 	g.P("}")
-	g.P("resp, err = r.interceptor(goCtx, &req, info, handler)")
+	g.P("resp, err = r.interceptor(c, &req, info, handler)")
 	g.P("} else {")
-	g.P("resp, err = r.server.", method.GoName, "(goCtx, &req)")
+	g.P("resp, err = r.server.", method.GoName, "(c, &req)")
 	g.P("}")
 
 	g.P("if err != nil {")
-	g.P(errorHandlersImport.Ident(*flagGrpcErrorHandleFunc), "(ctx, err)")
-	g.P("return")
+	g.P(errorHandlersImport.Ident(*flagGrpcErrorHandleFunc), "(c, err)")
+	g.P("return err")
 	g.P("}")
 	g.P()
 
 	g.P("data, mErr := ", jsonUnmarshalImport.Ident("Marshal"), "(resp)")
 	g.P("if mErr != nil {")
-	g.P(errorHandlersImport.Ident(*flagGrpcErrorHandleFunc), "(ctx, mErr)")
-	g.P("return")
+	g.P(errorHandlersImport.Ident(*flagGrpcErrorHandleFunc), "(c, mErr)")
+	g.P("return mErr")
 	g.P("}")
-	g.P("ctx.SetContentType(\"application/json\")")
-	g.P("ctx.SetStatusCode(", fasthttpImport.Ident("StatusOK"), ")")
-	g.P("ctx.Write(data)")
+	g.P("c.SetContentType(\"application/json\")")
+	g.P("c.SetStatusCode(", fasthttpImport.Ident("StatusOK"), ")")
+	g.P("c.Write(data)")
 }
 
 func genRouteMethodName(method *protogen.Method) string {
