@@ -10,7 +10,7 @@ PATH := $(OUT):$(PATH)
 PROTOC_VERSION := v30.2
 PROTOC_ZIP     := protoc-30.2-linux-x86_64.zip
 
-# OPTIONS
+# FIBER OPTIONS
 FIBER_OPTS_PATHS                    ?= source_relative
 FIBER_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/xakepp35/pkg/xprotoc-gen/utils
 FIBER_OPTS_JSON_UNMARSHAL_PACKAGE   ?= encoding/json
@@ -26,6 +26,23 @@ PROTOC_GEN_GO_FIBER_OPTS = \
   unmarshal_error_handle_func=$(FIBER_OPTS_UNMARSHAL_ERROR_FUNC) \
   validation_error_handle_func=$(FIBER_OPTS_VALIDATION_ERROR_FUNC)
 
+# FASTHTTP OPTIONS
+FASTHTTP_OPTS_PATHS                    ?= source_relative
+FASTHTTP_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/xakepp35/pkg/xprotoc-gen/utils
+FASTHTTP_OPTS_JSON_UNMARSHAL_PACKAGE   ?= encoding/json
+FASTHTTP_OPTS_GRPC_ERROR_FUNC          ?= FastHTTPHandleGRPCStatusError
+FASTHTTP_OPTS_UNMARSHAL_ERROR_FUNC     ?= FastHttpHandleUnmarshalError
+FASTHTTP_OPTS_VALIDATION_ERROR_FUNC    ?= FastHttpHandleValidationError
+
+PROTOC_GEN_GO_FASTHTTP_OPTS = \
+  paths=$(FASTHTTP_OPTS_PATHS) \
+  error_handlers_package=$(FASTHTTP_OPTS_ERROR_HANDLERS_PACKAGE) \
+  json_unmarshal_package=$(FASTHTTP_OPTS_JSON_UNMARSHAL_PACKAGE) \
+  grpc_error_handle_func=$(FASTHTTP_OPTS_GRPC_ERROR_FUNC) \
+  unmarshal_error_handle_func=$(FASTHTTP_OPTS_UNMARSHAL_ERROR_FUNC) \
+  validation_error_handle_func=$(FASTHTTP_OPTS_VALIDATION_ERROR_FUNC)
+
+
 OPENAPI_V2_OPT_OUTPUT_FORMAT ?= yaml
 OPENAPI_V2_OPT_DISABLE_DEFAULT_ERRORS ?= true
 OPENAPI_V2_OPT_ENUMS_AS_INTS ?= false
@@ -37,6 +54,7 @@ OPENAPI_V2_OPT = \
 
 install_tools:
 	cd tools/protoc-gen-go-fiber && go build -o $(OUT)/protoc-gen-go-fiber .
+	cd tools/protoc-gen-go-fasthttp  && go build -o $(OUT)/protoc-gen-go-fasthttp .
 	cd tools/protoc-gen-ts-axios && go build -o $(OUT)/protoc-gen-ts-axios .
 	GOBIN=$(OUT) go install github.com/envoyproxy/protoc-gen-validate@v1.2.1
 	GOBIN=$(OUT) go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
@@ -55,6 +73,8 @@ proto_gen:
              --validate_out=$(GO_OUT) --validate_opt=paths=source_relative,lang=go \
              --go-fiber_out=$(GO_OUT) \
              $(foreach opt,$(PROTOC_GEN_GO_FIBER_OPTS),--go-fiber_opt=$(opt)) \
+			 --go-fasthttp_out=$(GO_OUT) \
+			 $(foreach opt,$(PROTOC_GEN_GO_FASTHTTP_OPTS),--go-fasthttp_opt=$(opt)) \
              $(PROTO_FILES)
 .PHONY: proto_gen
 
@@ -71,6 +91,7 @@ proto_download:
 	# Google API
 	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/annotations.proto -o lib/google/api/annotations.proto
 	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto -o lib/google/api/http.proto
+	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/httpbody.proto -o lib/google/api/httpbody.proto
 
 	# Google Protobuf (core descriptors)
 	curl -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/main/src/google/protobuf/empty.proto -o lib/google/protobuf/empty.proto
