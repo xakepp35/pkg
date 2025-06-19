@@ -15,7 +15,7 @@ import (
 func genMethod(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("func (r *", serviceRouterStructName(method.Parent), ")", genRouteMethodName(method), `(c *`, fasthttpImport.Ident("RequestCtx"), `) {`)
 
-	g.P("ctx, cancel := ", contextImport.Ident("WithCancel"), "(c)")
+	g.P("ctx, cancel := ", contextImport.Ident("WithCancel"), "(context.Background())")
 	g.P("defer cancel()\n")
 
 	g.P("md := ", grpcMetadataImport.Ident("New"), "(nil)")
@@ -32,7 +32,7 @@ func genMethod(g *protogen.GeneratedFile, method *protogen.Method) {
 	genMethodExecPart(g, method)
 
 	g.P("	}")
-
+	g.P()
 }
 
 func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
@@ -46,7 +46,8 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	// use marshaller if we need
 	if hasExportedField {
 		g.P("if err := ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
-		g.P("	return ", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
+		g.P("	", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
+		g.P("	return")
 		g.P("}")
 		g.P()
 
@@ -60,7 +61,8 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 
 		if hasValidation {
 			g.P("if err := req.Validate(); err != nil {")
-			g.P("	return ", errorHandlersImport.Ident(*flagValidationErrorHandleFunc), "(c, err)")
+			g.P("	", errorHandlersImport.Ident(*flagValidationErrorHandleFunc), "(c, err)")
+			g.P("	return")
 			g.P("}")
 			g.P()
 		}
@@ -81,9 +83,9 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("Server: r.server,")
 	g.P(fmt.Sprintf(`FullMethod: %s_%s_FullMethodName,`, method.Parent.GoName, method.GoName))
 	g.P("}")
-	g.P("resp, err = r.interceptor(c, &req, info, handler)")
+	g.P("resp, err = r.interceptor(ctx, &req, info, handler)")
 	g.P("} else {")
-	g.P("resp, err = r.server.", method.GoName, "(c, &req)")
+	g.P("resp, err = r.server.", method.GoName, "(ctx, &req)")
 	g.P("}")
 
 	g.P("if err != nil {")

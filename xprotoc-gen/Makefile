@@ -28,7 +28,7 @@ PROTOC_GEN_GO_FIBER_OPTS = \
 
 # FASTHTTP OPTIONS
 FASTHTTP_OPTS_PATHS                    ?= source_relative
-FASTHTTP_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/vnlozan/pkg/xprotoc-gen/utils
+FASTHTTP_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/xakepp35/pkg/xprotoc-gen/utils
 FASTHTTP_OPTS_JSON_UNMARSHAL_PACKAGE   ?= encoding/json
 FASTHTTP_OPTS_GRPC_ERROR_FUNC          ?= FastHTTPHandleGRPCStatusError
 FASTHTTP_OPTS_UNMARSHAL_ERROR_FUNC     ?= FastHttpHandleUnmarshalError
@@ -91,6 +91,7 @@ proto_download:
 	# Google API
 	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/annotations.proto -o lib/google/api/annotations.proto
 	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/http.proto -o lib/google/api/http.proto
+	curl -sSL https://raw.githubusercontent.com/googleapis/googleapis/master/google/api/httpbody.proto -o lib/google/api/httpbody.proto
 
 	# Google Protobuf (core descriptors)
 	curl -sSL https://raw.githubusercontent.com/protocolbuffers/protobuf/main/src/google/protobuf/empty.proto -o lib/google/protobuf/empty.proto

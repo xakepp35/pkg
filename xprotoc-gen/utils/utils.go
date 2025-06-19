@@ -78,32 +78,34 @@ var (
 	FastHttpHandleValidationError = FastHTTPHandleNonGrpcError
 )
 
-func writeJSON(c *fasthttp.RequestCtx, statusCode int, v any) error {
+func writeJSON(c *fasthttp.RequestCtx, statusCode int, v any) {
 	data, err := json.Marshal(v)
 	if err != nil {
-		return err
+		c.Error("unable to marshal JSON", fasthttp.StatusInternalServerError)
+		return
 	}
+
 	c.Response.Header.SetContentType("application/json")
 	c.SetStatusCode(statusCode)
-	_, wErr := c.Write(data) // fasthttp пишет тело и возвращает ошибку записи
-	return wErr
+
+	if _, err = c.Write(data); err != nil {
+		c.Error("internal server error", fasthttp.StatusInternalServerError)
+	}
 }
 
-func FastHTTPHandleGRPCStatusError(c *fasthttp.RequestCtx, err error) error {
-	// успех без ошибки → пустой JSON
+func FastHTTPHandleGRPCStatusError(c *fasthttp.RequestCtx, err error) {
 	if err == nil {
 		c.Response.Header.SetContentType("application/json")
 		c.SetStatusCode(fasthttp.StatusOK)
-		_, wErr := c.Write([]byte("{}"))
-		return wErr
+		return
 	}
 
 	s, ok := status.FromError(err)
-	if !ok { // не-gRPC-ошибка
-		return writeJSON(c, fasthttp.StatusInternalServerError, ErrorMessage{Message: err.Error()})
+	if !ok {
+		writeJSON(c, fasthttp.StatusInternalServerError, ErrorMessage{Message: err.Error()})
+		return
 	}
 
-	// маппинг grpc-кодов → HTTP
 	var httpStatus int
 	switch s.Code() {
 	case codes.InvalidArgument:
@@ -128,15 +130,16 @@ func FastHTTPHandleGRPCStatusError(c *fasthttp.RequestCtx, err error) error {
 		httpStatus = fasthttp.StatusInternalServerError
 	}
 
-	return writeJSON(c, httpStatus, s.Proto())
+	writeJSON(c, httpStatus, s.Proto())
 }
 
-func FastHTTPHandleNonGrpcError(c *fasthttp.RequestCtx, err error) error {
+func FastHTTPHandleNonGrpcError(c *fasthttp.RequestCtx, err error) {
 	if err == nil {
 		c.Response.Header.SetContentType("application/json")
 		c.SetStatusCode(fasthttp.StatusOK)
-		_, wErr := c.Write([]byte("{}"))
-		return wErr
+		c.Write([]byte("{}"))
+		return
 	}
-	return writeJSON(c, fasthttp.StatusBadRequest, ErrorMessage{Message: err.Error()})
+
+	writeJSON(c, fasthttp.StatusBadRequest, ErrorMessage{Message: err.Error()})
 }
