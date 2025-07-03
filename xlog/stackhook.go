@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/rs/zerolog"
 	"runtime"
+	"strconv"
+	"strings"
 	"sync"
 )
 
@@ -11,8 +13,24 @@ import (
 func getGID() uint64 {
 	var buf [64]byte
 	n := runtime.Stack(buf[:], false)
-	var gid uint64
-	fmt.Sscanf(string(buf[:n]), "goroutine %d ", &gid)
+	stack := string(buf[:n])
+
+	const prefix = "goroutine "
+	if !strings.HasPrefix(stack, prefix) {
+		return 0
+	}
+
+	stack = stack[len(prefix):]
+	end := strings.IndexByte(stack, ' ')
+	if end < 0 {
+		return 0
+	}
+
+	gid, err := strconv.ParseUint(stack[:end], 10, 64)
+	if err != nil {
+		return 0
+	}
+
 	return gid
 }
 
@@ -36,21 +54,21 @@ func NewSimpleMap() *SimpleMap {
 
 func (s *SimpleMap) Store(gid uint64, value any) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	s.m[gid] = value
-	s.mu.Unlock()
 }
 
 func (s *SimpleMap) Load(gid uint64) (any, bool) {
 	s.mu.RLock()
+	defer s.mu.RUnlock()
 	v, ok := s.m[gid]
-	s.mu.RUnlock()
 	return v, ok
 }
 
 func (s *SimpleMap) Delete(gid uint64) {
 	s.mu.Lock()
+	defer s.mu.Unlock()
 	delete(s.m, gid)
-	s.mu.Unlock()
 }
 
 // Регистрация хранилищ и хуков
