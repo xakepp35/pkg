@@ -123,8 +123,8 @@ func (h *StackValueSetterHook) Run(e *zerolog.Event, level zerolog.Level, msg st
 // SetValue сохраняет value для текущей горутины в хранилище name
 func SetValue(name string, value any) error {
 	registryMu.RLock()
+	defer registryMu.RUnlock()
 	storage, exists := storages[name]
-	registryMu.RUnlock()
 	if !exists {
 		return fmt.Errorf("storage %s not found", name)
 	}
@@ -135,8 +135,8 @@ func SetValue(name string, value any) error {
 // DeleteValue удаляет значение для текущей горутины из хранилища name
 func DeleteValue(name string) error {
 	registryMu.RLock()
+	defer registryMu.RUnlock()
 	storage, exists := storages[name]
-	registryMu.RUnlock()
 	if !exists {
 		return fmt.Errorf("storage %s not found", name)
 	}
