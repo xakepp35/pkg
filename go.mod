@@ -8,6 +8,7 @@ require (
 	github.com/gofrs/uuid/v5 v5.3.1
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.3
 	github.com/jackc/pgx/v5 v5.7.4
+	github.com/petermattis/goid v0.0.0-20250508124226-395b08cebbdb
 	github.com/rqlite/gorqlite v0.0.0-20250128004930-114c7828b55a
 	github.com/rs/zerolog v1.34.0
 	github.com/stretchr/testify v1.10.0
