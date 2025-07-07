@@ -2,15 +2,27 @@ package xlog
 
 import (
 	"fmt"
-	"github.com/rs/zerolog"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/petermattis/goid"
+	"github.com/rs/zerolog"
 )
 
-// getGID возвращает ID текущей горутины, извлекая его из runtime.Stack
-func getGID() uint64 {
+var GetGID func() uint64 = GetGIDSafe
+
+func EnableUnsafe() {
+	GetGID = GetGIDUnsafe
+}
+
+// GetGID быстро возвращает ID текущей горутины (unsafe, но быстро)
+func GetGIDUnsafe() uint64 {
+	return uint64(goid.Get())
+}
+
+func GetGIDSafe() uint64 {
 	var buf [64]byte
 	n := runtime.Stack(buf[:], false)
 	stack := string(buf[:n])
@@ -114,7 +126,7 @@ type StackValueSetterHook struct {
 
 // Run реализует zerolog.Hook: берёт текущее значение из storage и вставляет в поле с именем name
 func (h *StackValueSetterHook) Run(e *zerolog.Event, level zerolog.Level, msg string) {
-	gid := getGID()
+	gid := GetGID()
 	if v, ok := h.storage.Load(gid); ok {
 		e.Interface(h.name, v)
 	}
@@ -128,7 +140,7 @@ func SetValue(name string, value any) error {
 	if !exists {
 		return fmt.Errorf("storage %s not found", name)
 	}
-	storage.Store(getGID(), value)
+	storage.Store(GetGID(), value)
 	return nil
 }
 
@@ -140,6 +152,6 @@ func DeleteValue(name string) error {
 	if !exists {
 		return fmt.Errorf("storage %s not found", name)
 	}
-	storage.Delete(getGID())
+	storage.Delete(GetGID())
 	return nil
 }

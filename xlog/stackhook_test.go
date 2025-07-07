@@ -103,7 +103,7 @@ func TestSetValueDeleteValue(t *testing.T) {
 	if err := SetValue(name, testVal); err != nil {
 		t.Fatalf("SetValue error: %v", err)
 	}
-	gid := getGID()
+	gid := GetGID()
 	stored, ok := storages[name].Load(gid)
 	if !ok {
 		t.Fatalf("value not stored for gid %d", gid)
@@ -157,10 +157,10 @@ func TestHookIntegration(t *testing.T) {
 	}
 }
 
-// getGID test: ensure getGID returns non-zero and stable within same goroutine
+// GetGID test: ensure GetGID returns non-zero and stable within same goroutine
 func TestGetGID(t *testing.T) {
-	gid1 := getGID()
-	gid2 := getGID()
+	gid1 := GetGID()
+	gid2 := GetGID()
 	if gid1 == 0 {
 		t.Error("expected non-zero gid")
 	}
@@ -176,11 +176,11 @@ func TestConcurrentGID(t *testing.T) {
 	wg.Add(2)
 	go func() {
 		defer wg.Done()
-		gids <- getGID()
+		gids <- GetGID()
 	}()
 	go func() {
 		defer wg.Done()
-		gids <- getGID()
+		gids <- GetGID()
 	}()
 	wg.Wait()
 	close(gids)
@@ -189,4 +189,16 @@ func TestConcurrentGID(t *testing.T) {
 	if collected[0] == collected[1] {
 		t.Errorf("expected different GIDs for different goroutines, got %d twice", collected[0])
 	}
+}
+
+func TestUnsafe(t *testing.T) {
+	EnableUnsafe()
+
+	TestStackHook(t)
+	TestSimpleMap(t)
+	TestRegisterHook(t)
+	TestSetValueDeleteValue(t)
+	TestHookIntegration(t)
+	TestGetGID(t)
+	TestConcurrentGID(t)
 }
