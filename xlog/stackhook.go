@@ -13,11 +13,12 @@ import (
 
 var GetGID func() uint64 = GetGIDSafe
 
+// EnableUnsafe для stack hook включает unsafe метод получения goid
 func EnableUnsafe() {
 	GetGID = GetGIDUnsafe
 }
 
-// GetGID быстро возвращает ID текущей горутины (unsafe, но быстро)
+// GetGIDUnsafe быстро возвращает ID текущей горутины (unsafe, но быстро)
 func GetGIDUnsafe() uint64 {
 	return uint64(goid.Get())
 }

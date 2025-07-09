@@ -1,6 +1,7 @@
 package xlog
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -27,4 +28,18 @@ func Init() {
 		Hook(HookCallerFunc{})
 
 	zerolog.DefaultContextLogger = &log.Logger
+}
+
+// AddStackHookKey add hook to global zerolog logger
+func AddStackHookKey(key string) error {
+	hook, err := RegisterHook(key, nil)
+	if err != nil {
+		return fmt.Errorf("register stack hook with key \"%s\" error: %w", key, err)
+	}
+
+	log.Logger = log.Hook(hook)
+
+	zerolog.DefaultContextLogger = &log.Logger
+
+	return nil
 }
