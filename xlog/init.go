@@ -1,6 +1,7 @@
 package xlog
 
 import (
+	"github.com/xakepp35/pkg/xerrors"
 	"os"
 	"time"
 
@@ -27,4 +28,18 @@ func Init() {
 		Hook(HookCallerFunc{})
 
 	zerolog.DefaultContextLogger = &log.Logger
+}
+
+// AddStackHookKey add hook to global zerolog logger
+func AddStackHookKey(key string) error {
+	hook, err := RegisterHook(key, nil)
+	if err != nil {
+		return xerrors.Err(err).Msg("register stack hook failed").Str("key", key).Err()
+	}
+
+	log.Logger = log.Hook(hook)
+
+	zerolog.DefaultContextLogger = &log.Logger
+
+	return nil
 }

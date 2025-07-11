@@ -1,7 +1,6 @@
 package xlog
 
 import (
-	"fmt"
 	"runtime"
 	"strconv"
 	"strings"
@@ -9,15 +8,18 @@ import (
 
 	"github.com/petermattis/goid"
 	"github.com/rs/zerolog"
+
+	"github.com/xakepp35/pkg/xerrors"
 )
 
 var GetGID func() uint64 = GetGIDSafe
 
+// EnableUnsafe для stack hook включает unsafe метод получения goid
 func EnableUnsafe() {
 	GetGID = GetGIDUnsafe
 }
 
-// GetGID быстро возвращает ID текущей горутины (unsafe, но быстро)
+// GetGIDUnsafe быстро возвращает ID текущей горутины (unsafe, но быстро)
 func GetGIDUnsafe() uint64 {
 	return uint64(goid.Get())
 }
@@ -95,7 +97,7 @@ func RegisterHook(name string, rawMap map[uint64]any) (*StackValueSetterHook, er
 	registryMu.Lock()
 	defer registryMu.Unlock()
 	if _, exists := storages[name]; exists {
-		return nil, fmt.Errorf("storage %s already registered", name)
+		return nil, xerrors.Err(nil).Msg("storage already registered").Str("storage", name).Err()
 	}
 	var storage GIDStorage
 	if rawMap != nil {
@@ -112,7 +114,7 @@ func RegisterHookWithStorage(name string, storage GIDStorage) (*StackValueSetter
 	registryMu.Lock()
 	defer registryMu.Unlock()
 	if _, exists := storages[name]; exists {
-		return nil, fmt.Errorf("storage %s already registered", name)
+		return nil, xerrors.Err(nil).Msg("storage already registered").Str("storage", name).Err()
 	}
 	storages[name] = storage
 	return &StackValueSetterHook{name: name, storage: storage}, nil
@@ -138,7 +140,7 @@ func SetValue(name string, value any) error {
 	defer registryMu.RUnlock()
 	storage, exists := storages[name]
 	if !exists {
-		return fmt.Errorf("storage %s not found", name)
+		return xerrors.Err(nil).Msg("storage not found").Str("storage", name).Err()
 	}
 	storage.Store(GetGID(), value)
 	return nil
@@ -150,7 +152,7 @@ func DeleteValue(name string) error {
 	defer registryMu.RUnlock()
 	storage, exists := storages[name]
 	if !exists {
-		return fmt.Errorf("storage %s not found", name)
+		return xerrors.Err(nil).Msg("storage not found").Str("storage", name).Err()
 	}
 	storage.Delete(GetGID())
 	return nil
