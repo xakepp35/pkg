@@ -3,6 +3,8 @@ package xlog
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/stretchr/testify/require"
@@ -10,6 +12,15 @@ import (
 	"sync"
 	"testing"
 )
+
+func TestName(t *testing.T) {
+	errors.Join()
+
+	fmt.Println(errors.Join(
+		errors.New("123"),
+		errors.New("123"),
+	).Error())
+}
 
 // helper to clear global registry between tests
 func clearRegistry() {

@@ -1,7 +1,7 @@
 package xlog
 
 import (
-	"fmt"
+	"github.com/xakepp35/pkg/xerrors"
 	"os"
 	"time"
 
@@ -34,7 +34,7 @@ func Init() {
 func AddStackHookKey(key string) error {
 	hook, err := RegisterHook(key, nil)
 	if err != nil {
-		return fmt.Errorf("register stack hook with key \"%s\" error: %w", key, err)
+		return xerrors.Err(err).Msg("register stack hook failed").Str("key", key).Err()
 	}
 
 	log.Logger = log.Hook(hook)
