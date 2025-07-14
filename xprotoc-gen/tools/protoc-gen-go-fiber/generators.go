@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/xakepp35/pkg/xerrors"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -24,7 +26,10 @@ func generateFile(plugin *protogen.Plugin) error {
 		genImports(g)
 
 		for _, service := range f.Services {
-			genService(g, service)
+			err := genService(g, service)
+			if err != nil {
+				return xerrors.Err(err).Msg("service generation").Str("service", service.GoName).Err()
+			}
 		}
 	}
 
@@ -33,10 +38,14 @@ func generateFile(plugin *protogen.Plugin) error {
 
 func genImports(g *protogen.GeneratedFile) {
 	g.Import(contextImport)
+	g.Import(stringsImport)
 	g.Import(fiberImport)
 	g.Import(grpcImport)
 	g.Import(grpcMetadataImport)
 	g.Import(errorHandlersImport)
+	g.Import(errorsBuilderImport)
+	g.Import(protoCodesImport)
+	g.Import(parsersImport)
 }
 
 func genHeader(plugin *protogen.Plugin, g *protogen.GeneratedFile, f *protogen.File) {
