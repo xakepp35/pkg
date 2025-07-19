@@ -43,12 +43,25 @@ func TestErrBuilder_Basic(t *testing.T) {
 func TestErrBuilder_ReusesBuffer(t *testing.T) {
 	orig := errors.New("base")
 
-	e1 := Err(orig).Str("x", "1").Send()
-	e2 := Err(orig).Str("y", "2").Send()
+	builder1 := Err(orig).(*errorBuilder)
+	e1 := builder1.Str("x", "1").Send()
+
+	builder2 := Err(orig).(*errorBuilder)
+	e2 := builder2.Str("y", "2").Send()
 
 	if e1 == nil || e2 == nil {
 		t.Fatal("expected non-nil errors")
 	}
+
+	// Fill buffers before comparing
+	builder1.errBuffer = append(builder1.errBuffer, []byte("test")...)
+	builder1.argsBuffer = append(builder1.argsBuffer, []byte("test")...)
+
+	require.Equal(t, &builder1.errBuffer[0], &builder2.errBuffer[0], "error buffers should have same address")
+	require.Equal(t, &builder1.argsBuffer[0], &builder2.argsBuffer[0], "args buffers should have same address")
+	require.Equal(t, cap(builder1.errBuffer), cap(builder2.errBuffer), "error buffers should have same capacity")
+	require.Equal(t, cap(builder1.argsBuffer), cap(builder2.argsBuffer), "args buffers should have same capacity")
+	require.Equal(t, builder1, builder2, "expected same builder instance to be reused")
 }
 
 func TestErrBuilder_Empty(t *testing.T) {
