@@ -1,9 +1,7 @@
 package xerrors
 
 import (
-	"bytes"
 	"errors"
-	"strconv"
 	"sync"
 
 	"google.golang.org/grpc/codes"
@@ -13,7 +11,9 @@ import (
 var buildersPool = sync.Pool{
 	New: func() interface{} {
 		return &errorBuilder{
-			buffer: bytes.Buffer{},
+			// new 2Kb
+			errBuffer:  make([]byte, 0, 2048),
+			argsBuffer: make([]byte, 0, 2048),
 		}
 	},
 }
@@ -21,76 +21,60 @@ var buildersPool = sync.Pool{
 var _ = ErrBuilder(&errorBuilder{})
 
 type ErrBuilder interface {
-	Err() error
-	ProtoErr(code codes.Code) error
+	Send() error
+	Msg(msg string) error
+	MsgProto(code codes.Code, msg string) error
 
-	Msg(msg string) ErrBuilder
-	Str(field, value string) ErrBuilder
-	Int64(field string, value int64) ErrBuilder
+	Fielder
 }
 
 type errorBuilder struct {
 	err        error
-	buffer     bytes.Buffer
-	hasFields  bool
-	hasMessage bool
+	errBuffer  []byte
+	argsBuffer []byte
 }
 
 func (e *errorBuilder) resetSelf() {
-	e.buffer.Reset()
-	e.hasFields = false
-	e.hasMessage = false
+	e.errBuffer = e.errBuffer[:0]
+	e.argsBuffer = e.argsBuffer[:0]
 	buildersPool.Put(e)
 }
 
-// ProtoErr *status.Status proto error
-func (e *errorBuilder) ProtoErr(code codes.Code) error {
-	defer e.resetSelf()
-	return status.Error(code, e.renderErr().Error())
-}
+func (e *errorBuilder) renderErr(msg string) error {
+	if msg != "" {
+		e.errBuffer = append(e.errBuffer, msg...)
 
-func (e *errorBuilder) renderErr() error {
+		if len(e.argsBuffer) > 0 {
+			e.errBuffer = append(e.errBuffer, ' ')
+		}
+	}
+
+	if len(e.argsBuffer) > 0 {
+		// отрезать последний пробел
+		e.errBuffer = append(e.errBuffer, e.argsBuffer[:len(e.argsBuffer)-1]...)
+	}
+
 	if e.err == nil {
-		return errors.New(e.buffer.String())
+		return errors.New(string(e.errBuffer))
 	}
 
-	return New(e.err, e.buffer.String())
+	return New(e.err, string(e.errBuffer))
 }
 
-// Err return compiled err wrapped in message
-func (e *errorBuilder) Err() error {
+func (e *errorBuilder) Send() error {
 	defer e.resetSelf()
-	return e.renderErr()
+	return e.renderErr("")
 }
 
-func (e *errorBuilder) Msg(msg string) ErrBuilder {
-	e.buffer.WriteString(msg)
-	e.hasMessage = true
-	return e
+func (e *errorBuilder) Msg(msg string) error {
+	defer e.resetSelf()
+	return e.renderErr(msg)
 }
 
-func (e *errorBuilder) Str(field, value string) ErrBuilder {
-	if e.hasFields || e.hasMessage {
-		e.buffer.WriteByte(' ') // ставить ли пробел, чтобы не было пробела перед ": "
-	}
-	e.buffer.WriteString(field)
-	e.buffer.WriteRune('=')
-	e.buffer.WriteString(value)
-	e.hasFields = true
-
-	return e
-}
-
-func (e *errorBuilder) Int64(field string, value int64) ErrBuilder {
-	if e.hasFields || e.hasMessage {
-		e.buffer.WriteByte(' ') // ставить ли пробел, чтобы не было пробела перед ": "
-	}
-	e.buffer.WriteString(field)
-	e.buffer.WriteRune('=')
-	e.buffer.WriteString(strconv.FormatInt(value, 10))
-	e.hasFields = true
-
-	return e
+// MsgProto *status.Status proto error
+func (e *errorBuilder) MsgProto(code codes.Code, msg string) error {
+	defer e.resetSelf()
+	return status.Error(code, e.renderErr(msg).Error())
 }
 
 func Err(err error) ErrBuilder {

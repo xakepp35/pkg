@@ -16,7 +16,7 @@ func (m *messageError) Error() string {
 }
 
 func New(err error, message string) error {
-	errStr := []byte(err.Error())
+	errStr := err.Error()
 	output := make([]byte, len(errStr)+len(message)+2)
 
 	copy(output, message)

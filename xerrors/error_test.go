@@ -23,7 +23,7 @@ func TestIs(t *testing.T) {
 	})
 
 	t.Run("builder", func(t *testing.T) {
-		err := Err(sql.ErrNoRows).Msg("not found").Str("foo", "bar").Err()
+		err := Err(sql.ErrNoRows).Str("foo", "bar").Msg("not found")
 
 		require.True(t, errors.Is(err, sql.ErrNoRows))
 	})
