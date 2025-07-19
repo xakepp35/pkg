@@ -1,0 +1,8 @@
+This project contains code adapted from the following projects:
+
+1. zerolog (https://github.com/rs/zerolog)
+   Copyright (c) 2017 Olivier Poitrey
+   License: MIT License
+   https://github.com/rs/zerolog/blob/master/LICENSE
+
+Copies of original licenses are included in the licenses/ directory or specified in source code files.
