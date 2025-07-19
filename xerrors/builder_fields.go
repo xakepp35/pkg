@@ -2,9 +2,7 @@ package xerrors
 
 import (
 	"github.com/xakepp35/pkg/src/pkg/types"
-	"strconv"
 	"time"
-	_ "unsafe"
 )
 
 type Fielder interface {
@@ -77,7 +75,7 @@ func (e *errorBuilder) Float32(field string, value float32) ErrBuilder {
 func (e *errorBuilder) Int64(field string, value int64) ErrBuilder {
 	e.argsBuffer = append(e.argsBuffer, field...)
 	e.argsBuffer = append(e.argsBuffer, '=')
-	e.argsBuffer = append(e.argsBuffer, strconv.FormatInt(value, 10)...)
+	e.argsBuffer = enc.AppendInt64(e.argsBuffer, value)
 	e.argsBuffer = append(e.argsBuffer, ' ')
 	return e
 }
@@ -85,7 +83,7 @@ func (e *errorBuilder) Int64(field string, value int64) ErrBuilder {
 func (e *errorBuilder) Uint64(field string, value uint64) ErrBuilder {
 	e.argsBuffer = append(e.argsBuffer, field...)
 	e.argsBuffer = append(e.argsBuffer, '=')
-	e.argsBuffer = append(e.argsBuffer, strconv.FormatUint(value, 10)...)
+	e.argsBuffer = enc.AppendUint64(e.argsBuffer, value)
 	e.argsBuffer = append(e.argsBuffer, ' ')
 	return e
 }
