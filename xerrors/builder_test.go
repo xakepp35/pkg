@@ -12,13 +12,13 @@ import (
 func TestEqual(t *testing.T) {
 
 	t.Run("str", func(t *testing.T) {
-		err := Err(sql.ErrNoRows).Msg("not found").Str("foo", "bar").Err()
+		err := Err(sql.ErrNoRows).Str("foo", "bar").Msg("not found")
 
 		require.Equal(t, err.Error(), fmt.Errorf("not found foo=bar: %w", sql.ErrNoRows).Error())
 	})
 
 	t.Run("int64", func(t *testing.T) {
-		err := Err(sql.ErrNoRows).Msg("not found").Int64("foo", 123).Err()
+		err := Err(sql.ErrNoRows).Int64("foo", 123).Msg("not found")
 
 		require.Equal(t, err.Error(), fmt.Errorf("not found foo=123: %w", sql.ErrNoRows).Error())
 	})
@@ -27,7 +27,7 @@ func TestEqual(t *testing.T) {
 func TestErrBuilder_Basic(t *testing.T) {
 	orig := errors.New("original error")
 
-	err := Err(orig).Msg("message 123").Str("field1", "value1").Str("field2", "value2").Err()
+	err := Err(orig).Str("field1", "value1").Str("field2", "value2").Msg("message 123")
 	if err == nil {
 		t.Fatal("expected non-nil error")
 	}
@@ -43,17 +43,30 @@ func TestErrBuilder_Basic(t *testing.T) {
 func TestErrBuilder_ReusesBuffer(t *testing.T) {
 	orig := errors.New("base")
 
-	e1 := Err(orig).Str("x", "1").Err()
-	e2 := Err(orig).Str("y", "2").Err()
+	builder1 := Err(orig).(*errorBuilder)
+	e1 := builder1.Str("x", "1").Send()
+
+	builder2 := Err(orig).(*errorBuilder)
+	e2 := builder2.Str("y", "2").Send()
 
 	if e1 == nil || e2 == nil {
 		t.Fatal("expected non-nil errors")
 	}
+
+	// Fill buffers before comparing
+	builder1.errBuffer = append(builder1.errBuffer, []byte("test")...)
+	builder1.argsBuffer = append(builder1.argsBuffer, []byte("test")...)
+
+	require.Equal(t, &builder1.errBuffer[0], &builder2.errBuffer[0], "error buffers should have same address")
+	require.Equal(t, &builder1.argsBuffer[0], &builder2.argsBuffer[0], "args buffers should have same address")
+	require.Equal(t, cap(builder1.errBuffer), cap(builder2.errBuffer), "error buffers should have same capacity")
+	require.Equal(t, cap(builder1.argsBuffer), cap(builder2.argsBuffer), "args buffers should have same capacity")
+	require.Equal(t, builder1, builder2, "expected same builder instance to be reused")
 }
 
 func TestErrBuilder_Empty(t *testing.T) {
 	orig := errors.New("something failed")
-	err := Err(orig).Err()
+	err := Err(orig).Send()
 
 	if got := err.Error(); !strings.Contains(got, "something failed") {
 		t.Errorf("unexpected error string: %s", got)
