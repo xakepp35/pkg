@@ -97,7 +97,7 @@ func RegisterHook(name string, rawMap map[uint64]any) (*StackValueSetterHook, er
 	registryMu.Lock()
 	defer registryMu.Unlock()
 	if _, exists := storages[name]; exists {
-		return nil, xerrors.Err(nil).Msg("storage already registered").Str("storage", name).Err()
+		return nil, xerrors.Err(nil).Str("storage", name).Msg("storage already registered")
 	}
 	var storage GIDStorage
 	if rawMap != nil {
@@ -114,7 +114,7 @@ func RegisterHookWithStorage(name string, storage GIDStorage) (*StackValueSetter
 	registryMu.Lock()
 	defer registryMu.Unlock()
 	if _, exists := storages[name]; exists {
-		return nil, xerrors.Err(nil).Msg("storage already registered").Str("storage", name).Err()
+		return nil, xerrors.Err(nil).Str("storage", name).Msg("storage already registered")
 	}
 	storages[name] = storage
 	return &StackValueSetterHook{name: name, storage: storage}, nil
@@ -140,7 +140,7 @@ func SetValue(name string, value any) error {
 	defer registryMu.RUnlock()
 	storage, exists := storages[name]
 	if !exists {
-		return xerrors.Err(nil).Msg("storage not found").Str("storage", name).Err()
+		return xerrors.Err(nil).Str("storage", name).Msg("storage not found")
 	}
 	storage.Store(GetGID(), value)
 	return nil
@@ -152,7 +152,7 @@ func DeleteValue(name string) error {
 	defer registryMu.RUnlock()
 	storage, exists := storages[name]
 	if !exists {
-		return xerrors.Err(nil).Msg("storage not found").Str("storage", name).Err()
+		return xerrors.Err(nil).Str("storage", name).Msg("storage not found")
 	}
 	storage.Delete(GetGID())
 	return nil

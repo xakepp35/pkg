@@ -34,7 +34,7 @@ func Init() {
 func AddStackHookKey(key string) error {
 	hook, err := RegisterHook(key, nil)
 	if err != nil {
-		return xerrors.Err(err).Msg("register stack hook failed").Str("key", key).Err()
+		return xerrors.Err(err).Str("key", key).Msg("register stack hook failed")
 	}
 
 	log.Logger = log.Hook(hook)
