@@ -9,6 +9,7 @@ import (
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -93,6 +94,45 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("return")
 	g.P("}")
 	g.P()
+
+	if method.Output.Desc.FullName() == protoreflect.FullName("google.api.HttpBody") {
+		httpBodyImport := g.QualifiedGoIdent(
+			protogen.GoIdent{
+				GoImportPath: "google.golang.org/genproto/googleapis/api/httpbody",
+				GoName:       "HttpBody",
+			},
+		)
+
+		structpbImport := g.QualifiedGoIdent(
+			protogen.GoIdent{
+				GoImportPath: "google.golang.org/protobuf/types/known/structpb",
+				GoName:       "Struct",
+			},
+		)
+
+		g.P("if hb, ok := resp.(*", httpBodyImport, "); ok {")
+		g.P("if ct := hb.GetContentType(); ct != \"\" { c.SetContentType(ct) }")
+
+		g.P("for _, ext := range hb.GetExtensions() {")
+		g.P("    var s ", structpbImport)
+		g.P("    if err := ext.UnmarshalTo(&s); err == nil {")
+		g.P("        for k, v := range s.Fields {")
+		g.P("            if v.GetKind() != nil {")
+		g.P("                c.Response.Header.Set(k, v.GetStringValue())")
+		g.P("            }")
+		g.P("        }")
+		g.P("    }")
+		g.P("}")
+		g.P()
+
+		g.P("c.SetStatusCode(", fasthttpImport.Ident("StatusOK"), ")")
+		g.P("c.Write(hb.GetData())")
+
+		g.P("return")
+		g.P("}")
+
+		return
+	}
 
 	g.P("data, mErr := ", jsonUnmarshalImport.Ident("Marshal"), "(resp)")
 	g.P("if mErr != nil {")
