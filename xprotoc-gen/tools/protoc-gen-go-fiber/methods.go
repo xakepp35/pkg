@@ -159,10 +159,9 @@ func genReadReqFromQueryOrParams(g *protogen.GeneratedFile, message *protogen.Me
 		g.P("req.", fieldName, ", err = ", parseExpression)
 		g.P("if err != nil {")
 		g.P(`  return `, errorHandlersImport.Ident(*flagGrpcErrorHandleFunc), `(c, `,
-			errorsBuilderImport.Ident("Err"),
-			`(err).Msg("parse query/params field failed").`)
+			errorsBuilderImport.Ident("Err"), `(err).`)
 		g.P(`Str("field", "`, protoName, `").`)
-		g.P(`ProtoErr(`, protoCodesImport.Ident("InvalidArgument"), `))`)
+		g.P(`MsgProto(`, protoCodesImport.Ident("InvalidArgument"), `, "parse query/params field failed"))`)
 		g.P("}")
 		g.P()
 	}
@@ -196,8 +195,7 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 		g.P("        return ", errorHandlersImport.Ident(*flagGrpcErrorHandleFunc),
 			"(c, ",
 			errorsBuilderImport.Ident("Err"), "(nil).",
-			"Msg(\"invalid http response\").",
-			"ProtoErr(", protoCodesImport.Ident("Internal"), "))",
+			"MsgProto(", protoCodesImport.Ident("Internal"), ", \"invalid http response\")", ")",
 		)
 		g.P("    }")
 		g.P("    c.Set(", fiberImport.Ident("HeaderContentType"), ", httpResp.GetContentType())")
