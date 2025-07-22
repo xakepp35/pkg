@@ -30,7 +30,7 @@ PROTOC_GEN_GO_FIBER_OPTS = \
 
 # FASTHTTP OPTIONS
 FASTHTTP_OPTS_PATHS                    ?= source_relative
-FASTHTTP_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/xakepp35/pkg/xprotoc-gen/utils
+FASTHTTP_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/xakepp35/pkg/xprotoc-gen/utils-fasthttp
 FASTHTTP_OPTS_JSON_UNMARSHAL_PACKAGE   ?= encoding/json
 FASTHTTP_OPTS_GRPC_ERROR_FUNC          ?= FastHTTPHandleGRPCStatusError
 FASTHTTP_OPTS_UNMARSHAL_ERROR_FUNC     ?= FastHttpHandleUnmarshalError
