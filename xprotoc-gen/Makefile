@@ -13,6 +13,7 @@ PROTOC_ZIP     := protoc-30.2-linux-x86_64.zip
 # FIBER OPTIONS
 FIBER_OPTS_PATHS                    ?= source_relative
 FIBER_OPTS_ERROR_HANDLERS_PACKAGE   ?= github.com/xakepp35/pkg/xprotoc-gen/utils
+FIBER_OPTS_PARSERS_PACKAGE          ?= github.com/xakepp35/pkg/xprotoc-gen/utils
 FIBER_OPTS_JSON_UNMARSHAL_PACKAGE   ?= encoding/json
 FIBER_OPTS_GRPC_ERROR_FUNC          ?= HandleGRPCStatusError
 FIBER_OPTS_UNMARSHAL_ERROR_FUNC     ?= HandleUnmarshalError
@@ -21,6 +22,7 @@ FIBER_OPTS_VALIDATION_ERROR_FUNC    ?= HandleValidationError
 PROTOC_GEN_GO_FIBER_OPTS = \
   paths=$(FIBER_OPTS_PATHS) \
   error_handlers_package=$(FIBER_OPTS_ERROR_HANDLERS_PACKAGE) \
+  parsers_package=$(FIBER_OPTS_PARSERS_PACKAGE) \
   json_unmarshal_package=$(FIBER_OPTS_JSON_UNMARSHAL_PACKAGE) \
   grpc_error_handle_func=$(FIBER_OPTS_GRPC_ERROR_FUNC) \
   unmarshal_error_handle_func=$(FIBER_OPTS_UNMARSHAL_ERROR_FUNC) \
