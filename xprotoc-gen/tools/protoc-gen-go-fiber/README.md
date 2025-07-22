@@ -45,11 +45,31 @@ service GreeterService {
       body: "*"
     };
   }
+
+  // New POST method example
+  rpc CreateUser(CreateUserRequest) returns (CreateUserResponse) {
+    option (google.api.http) = {
+      post: "/api/v1/user"
+      body: "*"
+    };
+  }
 }
 
 message HelloRequest {
   string name = 1 [(validate.rules).string.min_len = 3];
   string email = 2 [(validate.rules).string.email = true];
+}
+
+// New request/response messages for CreateUser
+message CreateUserRequest {
+  string username = 1 [(validate.rules).string.min_len = 3];
+  string email = 2 [(validate.rules).string.email = true];
+}
+
+message CreateUserResponse {
+  string id = 1;
+  string username = 2;
+  string email = 3;
 }
 ```
 
@@ -84,6 +104,7 @@ RegisterGreeterServiceFiberRoutes(app, serverImpl, grpcInterceptor)
 |--------------------------------|---------------------------------------------------|-------------------------------------------------|
 | `error_handlers_package`       | Path to the package with error handler functions  | `github.com/petara94/protoc-gen-go-fiber/utils` |
 | `json_unmarshal_package`       | Path to the JSON unmarshal helper package         | `encoding/json`                                 |
+| `parsers_package`              | Path to the package with parsers (for query/params)| `github.com/petara94/protoc-gen-go-fiber/utils` |
 | `grpc_error_handle_func`       | Name of the gRPC error handler function           | `HandleGRPCStatusError`                         |
 | `unmarshal_error_handle_func`  | Name of the JSON unmarshal error handler function | `HandleUnmarshalError`                          |
 | `validation_error_handle_func` | Name of the validation error handler function     | `HandleValidationError`                         |
@@ -111,3 +132,15 @@ RegisterGreeterServiceFiberRoutes(app, serverImpl, grpcInterceptor)
 ## License
 
 [MIT License](LICENSE)
+
+## Example: Using the POST /api/v1/user endpoint
+
+You can now use the generated POST endpoint to create a user:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/user \
+  -H 'Content-Type: application/json' \
+  -d '{"username": "john", "email": "john@example.com"}'
+```
+
+The response will be a JSON object with the created user's data.

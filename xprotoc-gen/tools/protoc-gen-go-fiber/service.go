@@ -34,7 +34,7 @@ func genService(g *protogen.GeneratedFile, service *protogen.Service) error {
 	for _, method := range service.Methods {
 		err := genMethod(g, method)
 		if err != nil {
-			return xerrors.Err(err).Msg("method generation").Str("method", method.GoName).Err()
+			return xerrors.Err(err).Str("method", method.GoName).Msg("method generation")
 		}
 	}
 

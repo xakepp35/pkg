@@ -24,11 +24,12 @@ func generateFile(plugin *protogen.Plugin) error {
 		g.P("package ", f.GoPackageName)
 
 		genImports(g)
+		genGlobalVars(g)
 
 		for _, service := range f.Services {
 			err := genService(g, service)
 			if err != nil {
-				return xerrors.Err(err).Msg("service generation").Str("service", service.GoName).Err()
+				return xerrors.Err(err).Str("service", service.GoName).Msg("service generation")
 			}
 		}
 	}
@@ -46,6 +47,25 @@ func genImports(g *protogen.GeneratedFile) {
 	g.Import(errorsBuilderImport)
 	g.Import(protoCodesImport)
 	g.Import(parsersImport)
+}
+
+func genGlobalVars(g *protogen.GeneratedFile) {
+	g.P("var (")
+	g.P("\tParseInt32 = ", parsersImport.Ident("ParseInt32"))
+	g.P("\tParseInt64 = ", parsersImport.Ident("ParseInt64"))
+	g.P("\tParseUint32 = ", parsersImport.Ident("ParseUint32"))
+	g.P("\tParseUint64 = ", parsersImport.Ident("ParseUint64"))
+	g.P("\tParseBool = ", parsersImport.Ident("ParseBool"))
+	g.P("\tParseFloat32 = ", parsersImport.Ident("ParseFloat32"))
+	g.P("\tParseFloat64 = ", parsersImport.Ident("ParseFloat64"))
+	g.P("\tParseBytes = ", parsersImport.Ident("ParseBytes"))
+	g.P()
+	g.P("\tHandleGRPCStatusError = ", errorHandlersImport.Ident(*flagGrpcErrorHandleFunc))
+	g.P("\tHandleUnmarshalError = ", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc))
+	g.P("\tHandleValidationError = ", errorHandlersImport.Ident(*flagValidationErrorHandleFunc))
+	g.P()
+	g.P("\tUnmarshal = ", jsonUnmarshalImport.Ident("Unmarshal"))
+	g.P(")\n")
 }
 
 func genHeader(plugin *protogen.Plugin, g *protogen.GeneratedFile, f *protogen.File) {

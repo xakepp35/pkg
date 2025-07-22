@@ -11,7 +11,7 @@ var (
 	errorHandlersImport = protogen.GoImportPath(defaultFlagErrorHandlersPackage)
 	errorsBuilderImport = protogen.GoImportPath("github.com/xakepp35/pkg/xerrors")
 	protoCodesImport    = protogen.GoImportPath("google.golang.org/grpc/codes")
-	parsersImport       = protogen.GoImportPath(defaultFlagErrorHandlersPackage)
+	parsersImport       = protogen.GoImportPath(defaultParsersPackage)
 	jsonUnmarshalImport = protogen.GoImportPath(defaultJsonUnmarshalPackage)
 	httpbodyImport      = protogen.GoImportPath("google.golang.org/genproto/googleapis/api/httpbody")
 )
