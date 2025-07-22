@@ -59,7 +59,6 @@ install_tools:
 	GOBIN=$(OUT) go install github.com/envoyproxy/protoc-gen-validate@v1.2.1
 	GOBIN=$(OUT) go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 	GOBIN=$(OUT) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
-	GOBIN=$(OUT) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@v2.26.3
 	GOBIN=$(OUT) go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.26.3
 .PHONY: install_tools
 
@@ -67,7 +66,6 @@ proto_gen:
 	protoc -I $(INPUT_PROTO) -I lib \
              --go_out=$(GO_OUT) --go_opt=paths=source_relative \
              --go-grpc_out=$(GO_OUT) --go-grpc_opt=paths=source_relative \
-             --grpc-gateway_out=$(GO_OUT) --grpc-gateway_opt=paths=source_relative \
              --openapiv2_out=$(GO_OUT) \
              $(foreach opt,$(OPENAPI_V2_OPT),--openapiv2_opt=$(opt)) \
              --validate_out=$(GO_OUT) --validate_opt=paths=source_relative,lang=go \

@@ -85,6 +85,7 @@ RegisterGreeterServiceFiberRoutes(app, serverImpl, grpcInterceptor)
 |--------------------------------|------------------------------------------------------|-------------------------------------------------|
 | `error_handlers_package`       | Путь к пакету с функциями обработки ошибок           | `github.com/petara94/protoc-gen-go-fiber/utils` |
 | `json_unmarshal_package`       | Путь к пакету с функциями JSON-маршалинга            | `encoding/json`                                 |
+| `parsers_package`              | Путь к пакету с парсерами (для query/params)         | `github.com/petara94/protoc-gen-go-fiber/utils` |
 | `grpc_error_handle_func`       | Имя функции для обработки gRPC-ошибок                | `HandleGRPCStatusError`                         |
 | `unmarshal_error_handle_func`  | Имя функции для обработки ошибок десериализации JSON | `HandleUnmarshalError`                          |
 | `validation_error_handle_func` | Имя функции для обработки ошибок валидации           | `HandleValidationError`                         |
@@ -108,6 +109,24 @@ RegisterGreeterServiceFiberRoutes(app, serverImpl, grpcInterceptor)
     - Пробрасывает HTTP-заголовки в контекст.
     - Вызывает метод gRPC-сервера через переданный interceptor(если не nil).
     - Возвращает JSON-ответ или ошибку.
+
+## Переопределение зависимых функций в рантайме
+
+В каждом сгенерированном fiber-файле все функции-парсеры и обработчики ошибок объявлены как глобальные переменные. Вы можете заменить их на свои реализации в рантайме:
+
+```go
+// Например, заменить парсер int32
+ParseInt32 = func(s string) (int32, error) {
+    // ваша логика
+}
+
+// Или заменить обработчик ошибок
+HandleGRPCStatusError = func(c *fiber.Ctx, err error) error {
+    // ваша логика
+}
+```
+
+Пакеты, из которых берутся функции по умолчанию, можно указать через флаги генератора (см. выше).
 
 ## Лицензия
 
