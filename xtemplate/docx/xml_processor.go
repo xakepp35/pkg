@@ -33,38 +33,47 @@ func (xp *XMLProcessor) FixBrokenTemplateKeys(xml string) string {
 	// Сначала убираем все форматирование XML для упрощения обработки
 	result := xp.minifyXML(xml)
 
-	// Повторяем до тех пор, пока есть изменения (могут быть сложные вложенные случаи)
+	// Повторяем до тех пор, пока есть изменения
 	changed := true
 	for changed {
 		oldResult := result
 
-		// Шаг 1: Ищем и заменяем разорванные открывающие скобки {{
-		// Паттерн: { + любые теги + {
-		result = regexp.MustCompile(`\{(<[^>]*>[^{}]*</[^>]*>)*<([^>]*)>([^<]*)\{([^<]*)</[^>]*>`).ReplaceAllStringFunc(result, func(match string) string {
-			// Извлекаем части и склеиваем
-			return regexp.MustCompile(`\{.*?\{`).ReplaceAllString(match, "{{")
-		})
+		// Ищем все возможные части шаблонов
+		// Паттерн для поиска { + что-то + { + что-то + } + что-то + }
+		templatePattern := regexp.MustCompile(`\{[^{}]*\{[^{}]*\}[^{}]*\}`)
 
-		// Шаг 2: Ищем и заменяем разорванные закрывающие скобки }}
-		// Паттерн: } + любые теги + }
-		result = regexp.MustCompile(`\}(<[^>]*>[^{}]*</[^>]*>)*<([^>]*)>([^<]*)\}([^<]*)</[^>]*>`).ReplaceAllStringFunc(result, func(match string) string {
-			// Извлекаем части и склеиваем
-			return regexp.MustCompile(`\}.*?\}`).ReplaceAllString(match, "}}")
-		})
-
-		// Шаг 3: Очищаем содержимое готовых шаблонов от тегов
-		result = regexp.MustCompile(`\{\{([^{}]*)\}\}`).ReplaceAllStringFunc(result, func(match string) string {
-			content := match[2 : len(match)-2] // Убираем {{ и }}
-			// Удаляем все XML теги из содержимого
-			cleanContent := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(content, "")
+		result = templatePattern.ReplaceAllStringFunc(result, func(match string) string {
+			// Удаляем все XML теги из match
+			cleanContent := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(match, "")
 			cleanContent = strings.TrimSpace(cleanContent)
 
-			if cleanContent == "" {
-				return match
+			// Проверяем что это валидный шаблон
+			if len(cleanContent) >= 4 && cleanContent[:2] == "{{" && cleanContent[len(cleanContent)-2:] == "}}" {
+				// Извлекаем содержимое между {{ и }}
+				templateContent := strings.TrimSpace(cleanContent[2 : len(cleanContent)-2])
+				if templateContent != "" {
+					// Находим первый w:t тег в оригинальном match
+					firstTagPattern := regexp.MustCompile(`<w:t>[^<]*</w:t>`)
+					firstTag := firstTagPattern.FindString(match)
+
+					if firstTag != "" {
+						// Заменяем содержимое первого тега на восстановленный шаблон
+						newFirstTag := regexp.MustCompile(`(<w:t>)[^<]*(</w:t>)`).ReplaceAllString(firstTag, "${1}{{"+templateContent+"}}${2}")
+
+						// Возвращаем только первый тег с восстановленным шаблоном
+						return newFirstTag
+					}
+
+					return "{{" + templateContent + "}}"
+				}
 			}
 
-			return "{{" + cleanContent + "}}"
+			return match
 		})
+
+		// Убираем дублированные теги w:t
+		result = regexp.MustCompile(`<w:t><w:t>`).ReplaceAllString(result, `<w:t>`)
+		result = regexp.MustCompile(`</w:t></w:t>`).ReplaceAllString(result, `</w:t>`)
 
 		changed = (oldResult != result)
 	}
