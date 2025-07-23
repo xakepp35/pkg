@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"slices"
-	"unicode"
 
 	"github.com/envoyproxy/protoc-gen-validate/validate"
 	"google.golang.org/genproto/googleapis/api/annotations"
@@ -37,43 +35,62 @@ func genMethod(g *protogen.GeneratedFile, method *protogen.Method) {
 }
 
 func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
+	readAll := protogen.GoIdent{GoName: "ReadAll", GoImportPath: "io"}
+
+	if len(method.Input.Fields) == 1 && method.Input.Fields[0].Desc.Kind() == protoreflect.BytesKind {
+		g.P("var req ", method.Input.GoIdent)
+		g.P()
+		g.P("// Bind uploaded file from multipart/form-data")
+		g.P("header, err := c.FormFile(\"file\")")
+		g.P("if err != nil {")
+		g.P("    c.Error(err.Error(), fasthttp.StatusBadRequest)")
+		g.P("    return")
+		g.P("}")
+		g.P("f, err := header.Open()")
+		g.P("if err != nil {")
+		g.P("    c.Error(err.Error(), fasthttp.StatusInternalServerError)")
+		g.P("    return")
+		g.P("}")
+		g.P("defer f.Close()")
+		g.P("data, err := ", g.QualifiedGoIdent(readAll), "(f)")
+		g.P("if err != nil {")
+		g.P("    c.Error(err.Error(), fasthttp.StatusInternalServerError)")
+		g.P("    return")
+		g.P("}")
+		g.P("// Populate the single []byte field on the proto message")
+		g.P("req.File = data")
+		g.P()
+		return
+	}
+
 	g.P("var req ", method.Input.GoIdent)
 	g.P()
+	g.P("if err := ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
+	g.P("    ", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
+	g.P("    return")
+	g.P("}")
+	g.P()
 
-	hasExportedField := slices.ContainsFunc(method.Input.Fields, func(f *protogen.Field) bool {
-		return unicode.IsUpper(rune(f.GoName[0]))
-	})
-
-	// use marshaller if we need
-	if hasExportedField {
-		g.P("if err := ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
-		g.P("	", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
-		g.P("	return")
+	hasValidation := false
+	for _, field := range method.Input.Fields {
+		if proto.HasExtension(field.Desc.Options(), validate.E_Rules) {
+			hasValidation = true
+			break
+		}
+	}
+	if hasValidation {
+		g.P("if err := req.Validate(); err != nil {")
+		g.P("    ", errorHandlersImport.Ident(*flagValidationErrorHandleFunc), "(c, err)")
+		g.P("    return")
 		g.P("}")
 		g.P()
-
-		hasValidation := false
-		for _, field := range method.Input.Fields {
-			if proto.HasExtension(field.Desc.Options(), validate.E_Rules) {
-				hasValidation = true
-				break
-			}
-		}
-
-		if hasValidation {
-			g.P("if err := req.Validate(); err != nil {")
-			g.P("	", errorHandlersImport.Ident(*flagValidationErrorHandleFunc), "(c, err)")
-			g.P("	return")
-			g.P("}")
-			g.P()
-		}
 	}
 }
 
 func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("var (")
 	g.P("resp any")
-	g.P("err  error")
+	// g.P("err  error")
 	g.P(")")
 
 	g.P("if r.interceptor != nil {")

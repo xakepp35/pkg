@@ -52,65 +52,53 @@ func main() {
 }
 
 func patch(sw map[string]interface{}) {
-	defs, _ := sw["definitions"].(map[string]interface{})
 	paths, _ := sw["paths"].(map[string]interface{})
+	const multipart = "multipart/form-data"
 
-	for _, p := range paths {
-		methods, _ := p.(map[string]interface{})
-		for _, raw := range methods {
-			op, _ := raw.(map[string]interface{})
+	for _, rawPathItem := range paths {
+		ops, _ := rawPathItem.(map[string]interface{})
+		for _, rawOp := range ops {
+			op, _ := rawOp.(map[string]interface{})
 
-			var param map[string]interface{}
-			if arr, ok := op["parameters"].([]interface{}); ok {
-				for _, it := range arr {
-					pmap, _ := it.(map[string]interface{})
-					if pmap["in"] == "body" {
-						param = pmap
+			// 1) ensure consumes: multipart/form-data
+			if cons, ok := op["consumes"].([]interface{}); ok {
+				found := false
+				for _, c := range cons {
+					if c == multipart {
+						found = true
 						break
 					}
 				}
-			}
-			if param == nil {
-				continue
-			}
-
-			sch, _ := param["schema"].(map[string]interface{})
-			ref, _ := sch["$ref"].(string)
-			if ref == "" || !strings.HasPrefix(ref, "#/definitions/") {
-				continue
-			}
-			defName := strings.TrimPrefix(ref, "#/definitions/")
-			defObj, _ := defs[defName].(map[string]interface{})
-			if !hasBytesField(defObj) {
-				continue
-			}
-
-			param["in"] = "formData"
-			param["type"] = "file"
-			delete(param, "schema")
-			delete(param, "format")
-
-			const ct = "multipart/form-data"
-			if cons, ok := op["consumes"].([]interface{}); ok {
-				op["consumes"] = append(cons, ct)
+				if !found {
+					op["consumes"] = append(cons, multipart)
+				}
 			} else {
-				op["consumes"] = []interface{}{ct}
+				op["consumes"] = []interface{}{multipart}
 			}
-		}
-	}
-}
 
-func hasBytesField(def map[string]interface{}) bool {
-	props, _ := def["properties"].(map[string]interface{})
-	for _, v := range props {
-		p, _ := v.(map[string]interface{})
-		if p["type"] == "string" {
-			if fmt, _ := p["format"].(string); fmt == "bytes" || fmt == "binary" {
-				return true
+			// 2) rewrite the single body→binary parameter
+			if params, ok := op["parameters"].([]interface{}); ok {
+				for i, rawParam := range params {
+					p, _ := rawParam.(map[string]interface{})
+					if p["in"] == "body" {
+						if schema, ok := p["schema"].(map[string]interface{}); ok {
+							if schema["type"] == "string" &&
+								(schema["format"] == "binary" || schema["format"] == "bytes") {
+								// mutate into a file upload
+								delete(p, "schema")
+								p["in"] = "formData"
+								p["type"] = "file"
+								// keep any existing description
+								// p["description"] = schema["description"]
+								params[i] = p
+							}
+						}
+					}
+				}
+				op["parameters"] = params
 			}
 		}
 	}
-	return false
 }
 
 func fixFile(path string) error {
