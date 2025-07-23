@@ -3,9 +3,6 @@ package docx
 import (
 	"regexp"
 	"strings"
-
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/xml"
 )
 
 // XMLProcessor отвечает за обработку XML содержимого документа
@@ -28,121 +25,87 @@ func NewXMLProcessor() *XMLProcessor {
 }
 
 // FixBrokenTemplateKeys объединяет разбитые плейсхолдеры типа {{.Title}}
-// Использует regexp для поиска и замены разорванных шаблонов
 func (xp *XMLProcessor) FixBrokenTemplateKeys(xml string) string {
-	// Сначала убираем все форматирование XML для упрощения обработки
-	result := xp.minifyXML(xml)
-
-	// Повторяем до тех пор, пока есть изменения (могут быть сложные вложенные случаи)
-	changed := true
-	for changed {
-		oldResult := result
-
-		// Шаг 1: Ищем и заменяем разорванные открывающие скобки {{
-		// Паттерн: { + любые теги + {
-		result = regexp.MustCompile(`\{(<[^>]*>[^{}]*</[^>]*>)*<([^>]*)>([^<]*)\{([^<]*)</[^>]*>`).ReplaceAllStringFunc(result, func(match string) string {
-			// Извлекаем части и склеиваем
-			return regexp.MustCompile(`\{.*?\{`).ReplaceAllString(match, "{{")
-		})
-
-		// Шаг 2: Ищем и заменяем разорванные закрывающие скобки }}
-		// Паттерн: } + любые теги + }
-		result = regexp.MustCompile(`\}(<[^>]*>[^{}]*</[^>]*>)*<([^>]*)>([^<]*)\}([^<]*)</[^>]*>`).ReplaceAllStringFunc(result, func(match string) string {
-			// Извлекаем части и склеиваем
-			return regexp.MustCompile(`\}.*?\}`).ReplaceAllString(match, "}}")
-		})
-
-		// Шаг 3: Очищаем содержимое готовых шаблонов от тегов
-		result = regexp.MustCompile(`\{\{([^{}]*)\}\}`).ReplaceAllStringFunc(result, func(match string) string {
-			content := match[2 : len(match)-2] // Убираем {{ и }}
-			// Удаляем все XML теги из содержимого
-			cleanContent := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(content, "")
-			cleanContent = strings.TrimSpace(cleanContent)
-
-			if cleanContent == "" {
-				return match
-			}
-
-			return "{{" + cleanContent + "}}"
-		})
-
-		changed = (oldResult != result)
+	matches := xp.wrRegexp.FindAllStringIndex(xml, -1)
+	if len(matches) == 0 {
+		return xml
 	}
 
-	return result
-}
+	var result strings.Builder
+	lastEnd := 0
+	n := len(matches)
+	i := 0
 
-// minifyXML удаляет все пробелы, табы и переносы строк между XML тегами
-func (xp *XMLProcessor) minifyXML(xmlContent string) string {
-	m := minify.New()
-	m.AddFunc("text/xml", xml.Minify)
+	for i < n {
+		start, end := matches[i][0], matches[i][1]
+		run := xml[start:end]
 
-	result, err := m.String("text/xml", xmlContent)
-	if err != nil {
-		// Если минификация не удалась, возвращаем оригинал
-		return xmlContent
-	}
+		// Извлекаем текст из <w:t>
+		tMatch := xp.wtRegexp.FindStringSubmatch(run)
+		if tMatch == nil || len(tMatch) < 2 {
+			result.WriteString(xml[lastEnd:end])
+			lastEnd = end
+			i++
+			continue
+		}
 
-	return result
-}
+		text := tMatch[1]
+		openIdx := strings.Index(text, "{{")
+		if openIdx == -1 {
+			// Не начало плейсхолдера — просто копируем
+			result.WriteString(xml[lastEnd:end])
+			lastEnd = end
+			i++
+			continue
+		}
 
-// isLetter проверяет, является ли символ буквой
-func isLetter(r rune) bool {
-	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
-}
+		// Кандидат на склейку
+		buffer := text
+		bufferStart := start
+		bufferEnd := end
+		j := i + 1
 
-// isAllowedBetweenRuns проверяет, содержит ли текст только разрешенные элементы между <w:r> тегами
-func (xp *XMLProcessor) isAllowedBetweenRuns(text string) bool {
-	// Удаляем пробелы и переносы строк
-	text = strings.TrimSpace(text)
-	if text == "" {
-		return true
-	}
-
-	// Разрешенные теги между w:r элементами
-	allowedTags := []string{
-		"<w:proofErr",
-		"</w:proofErr>",
-		"<w:softHyphen/>",
-		"<w:noBreakHyphen/>",
-	}
-
-	// Создаем временную строку для обработки
-	remaining := text
-
-	for len(remaining) > 0 {
-		found := false
-		for _, tag := range allowedTags {
-			if strings.HasPrefix(remaining, tag) {
-				if strings.Contains(tag, "/>") {
-					// Самозакрывающийся тег
-					remaining = remaining[len(tag):]
-				} else if strings.HasPrefix(tag, "</") {
-					// Закрывающий тег
-					remaining = remaining[len(tag):]
-				} else {
-					// Открывающий тег - нужно найти его конец
-					endPos := strings.Index(remaining, ">")
-					if endPos == -1 {
-						return false
-					}
-					remaining = remaining[endPos+1:]
-				}
-				found = true
+		for j < n {
+			// Проверяем, что между end предыдущего и start следующего только whitespace
+			inter := xml[bufferEnd:matches[j][0]]
+			if strings.TrimSpace(inter) != "" {
 				break
 			}
+
+			nextRun := xml[matches[j][0]:matches[j][1]]
+			nextTMatch := xp.wtRegexp.FindStringSubmatch(nextRun)
+			if nextTMatch == nil || len(nextTMatch) < 2 {
+				break
+			}
+
+			nextText := nextTMatch[1]
+			buffer += nextText
+			bufferEnd = matches[j][1]
+
+			if strings.Contains(buffer, "}}") {
+				// Нашли конец плейсхолдера, склеиваем
+				xp.mergeTemplateRuns(&result, xml, lastEnd, bufferStart, buffer, matches, i, j)
+				lastEnd = bufferEnd
+				i = j + 1
+				break
+			}
+			j++
 		}
 
-		if !found {
-			// Если нашли неразрешенный контент, возвращаем false
-			return false
+		if lastEnd < bufferStart {
+			// Не удалось склеить — выводим как есть
+			result.WriteString(xml[lastEnd:end])
+			lastEnd = end
+			i++
 		}
-
-		// Убираем пробелы после обработки тега
-		remaining = strings.TrimSpace(remaining)
 	}
 
-	return true
+	if lastEnd < len(xml) {
+		result.WriteString(xml[lastEnd:])
+	}
+
+	resultStr := result.String()
+	return xp.cleanupEmptyRuns(resultStr)
 }
 
 // mergeTemplateRuns объединяет run'ы с плейсхолдером
