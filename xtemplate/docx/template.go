@@ -49,6 +49,10 @@ func New(name string) *Template {
 	return t
 }
 
+func (t *Template) SetDelimiterPair(open, close rune) {
+	t.xmlProcessor.SetDelimiterPair(open, close)
+}
+
 // ParseDocxFileData парсит данные DOCX файла
 func (t *Template) ParseDocxFileData(data []byte) *Template {
 	t.err = nil
@@ -128,10 +132,15 @@ func (t *Template) readZipFile(file *zip.File) ([]byte, error) {
 
 // processDocumentXML обрабатывает XML документа
 func (t *Template) processDocumentXML(xmlContent string) error {
+	if err := t.xmlProcessor.validate(xmlContent); err != nil {
+		return xerrors.Err(err).Msg("validate document xml failed")
+	}
+
 	// Применяем обработку XML в правильном порядке
 	processedXML := t.xmlProcessor.FixBrokenTemplateKeys(xmlContent)
 	processedXML = t.xmlProcessor.PrepareRangeData(processedXML)
 	processedXML = t.xmlProcessor.PrepareAddImageData(processedXML)
+	//processedXML = t.xmlProcessor.minifyXML(processedXML)
 
 	// Парсим как Go template
 	_, err := t.textTemplate.Parse(processedXML)

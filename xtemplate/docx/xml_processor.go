@@ -1,11 +1,11 @@
 package docx
 
 import (
+	"bytes"
+	"errors"
+	"github.com/xakepp35/pkg/xerrors"
 	"regexp"
 	"strings"
-
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/xml"
 )
 
 // XMLProcessor отвечает за обработку XML содержимого документа
@@ -15,6 +15,9 @@ type XMLProcessor struct {
 	wrRegexp       *regexp.Regexp // для поиска <w:r>...</w:r>
 	rowRegexp      *regexp.Regexp // для поиска строк таблицы
 	addImageRegexp *regexp.Regexp // для поиска параграфов с изображениями
+
+	openRune  rune
+	closeRune rune
 }
 
 // NewXMLProcessor создает новый процессор XML
@@ -24,71 +27,91 @@ func NewXMLProcessor() *XMLProcessor {
 		wrRegexp:       regexp.MustCompile(`(?s)<w:r[\s\S]*?<w:t[\s\S]*?>[\s\S]*?</w:t>[\s\S]*?</w:r>`),
 		rowRegexp:      regexp.MustCompile(`(?s)(<w:tr.*?</w:tr>)`),
 		addImageRegexp: regexp.MustCompile(`(?s)(<w:p.*?</w:p>)`),
+		openRune:       '^',
+		closeRune:      '~',
 	}
 }
 
-// FixBrokenTemplateKeys объединяет разбитые плейсхолдеры типа {{.Title}}
-// Использует regexp для поиска и замены разорванных шаблонов
-func (xp *XMLProcessor) FixBrokenTemplateKeys(xml string) string {
-	// Сначала убираем все форматирование XML для упрощения обработки
-	result := xp.minifyXML(xml)
+func (xp *XMLProcessor) SetDelimiterPair(open, close rune) {
+	xp.openRune = open
+	xp.closeRune = close
+}
 
-	// Повторяем до тех пор, пока есть изменения (могут быть сложные вложенные случаи)
-	changed := true
-	for changed {
-		oldResult := result
-
-		// Шаг 1: Ищем и заменяем разорванные открывающие скобки {{
-		// Паттерн: { + любые теги + {
-		result = regexp.MustCompile(`\{(<[^>]*>[^{}]*</[^>]*>)*<([^>]*)>([^<]*)\{([^<]*)</[^>]*>`).ReplaceAllStringFunc(result, func(match string) string {
-			// Извлекаем части и склеиваем
-			return regexp.MustCompile(`\{.*?\{`).ReplaceAllString(match, "{{")
-		})
-
-		// Шаг 2: Ищем и заменяем разорванные закрывающие скобки }}
-		// Паттерн: } + любые теги + }
-		result = regexp.MustCompile(`\}(<[^>]*>[^{}]*</[^>]*>)*<([^>]*)>([^<]*)\}([^<]*)</[^>]*>`).ReplaceAllStringFunc(result, func(match string) string {
-			// Извлекаем части и склеиваем
-			return regexp.MustCompile(`\}.*?\}`).ReplaceAllString(match, "}}")
-		})
-
-		// Шаг 3: Очищаем содержимое готовых шаблонов от тегов
-		result = regexp.MustCompile(`\{\{([^{}]*)\}\}`).ReplaceAllStringFunc(result, func(match string) string {
-			content := match[2 : len(match)-2] // Убираем {{ и }}
-			// Удаляем все XML теги из содержимого
-			cleanContent := regexp.MustCompile(`<[^>]*>`).ReplaceAllString(content, "")
-			cleanContent = strings.TrimSpace(cleanContent)
-
-			if cleanContent == "" {
-				return match
+func (xp *XMLProcessor) validate(xml string) error {
+	open := 0
+	for i, c := range xml {
+		if c == xp.openRune {
+			open++
+			if open > 1 {
+				return xerrors.Err(nil).Int("place", i).Msg("nested open delimiter")
 			}
-
-			return "{{" + cleanContent + "}}"
-		})
-
-		changed = (oldResult != result)
+		}
+		if c == xp.closeRune {
+			open--
+			if open < 0 {
+				return xerrors.Err(nil).Int("place", i).Msg("closed delimiter, but not open")
+			}
+		}
 	}
 
-	return result
+	if open != 0 {
+		return errors.New("broken delimiter")
+	}
+
+	return nil
 }
 
-// minifyXML удаляет все пробелы, табы и переносы строк между XML тегами
+func (xp *XMLProcessor) FixBrokenTemplateKeys(xml string) string {
+	var result bytes.Buffer
+	inTemplate := false
+	inTag := false
+
+	if !strings.Contains(xml, string(xp.openRune)) && !strings.Contains(xml, string(xp.closeRune)) {
+		return xml
+	}
+
+	xml = xp.minifyXML(xml)
+
+	for _, c := range xml {
+		d := string(c)
+		_ = d
+
+		if inTemplate {
+			if c == xp.closeRune {
+				inTemplate = false
+				result.WriteString("}}")
+				continue
+			}
+			if c == '<' {
+				inTag = true
+				continue
+			}
+			if c == '>' {
+				inTag = false
+				continue
+			}
+			if !inTag {
+				result.WriteRune(c)
+			}
+			continue
+		}
+
+		if c == xp.openRune {
+			inTemplate = true
+			result.WriteString("{{")
+			continue
+		}
+
+		result.WriteRune(c)
+	}
+
+	return result.String()
+}
+
+var reBetweenTags = regexp.MustCompile(`>\s+<`)
+
 func (xp *XMLProcessor) minifyXML(xmlContent string) string {
-	m := minify.New()
-	m.AddFunc("text/xml", xml.Minify)
-
-	result, err := m.String("text/xml", xmlContent)
-	if err != nil {
-		// Если минификация не удалась, возвращаем оригинал
-		return xmlContent
-	}
-
-	return result
-}
-
-// isLetter проверяет, является ли символ буквой
-func isLetter(r rune) bool {
-	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+	return reBetweenTags.ReplaceAllString(xmlContent, "><")
 }
 
 // isAllowedBetweenRuns проверяет, содержит ли текст только разрешенные элементы между <w:r> тегами

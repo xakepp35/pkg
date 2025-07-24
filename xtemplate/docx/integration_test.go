@@ -53,14 +53,14 @@ func createMinimalDocx() []byte {
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
     <w:body>
         <w:p>
-            <w:r><w:t>Title: {{.Ti</w:t></w:r>
-            <w:r><w:t>tle}}</w:t></w:r>
+            <w:r><w:t>Title: ^.Ti</w:t></w:r>
+            <w:r><w:t>tle~</w:t></w:r>
         </w:p>
         <w:p>
-            <w:r><w:t>{{addImage .ImageData 200 200}}</w:t></w:r>
+            <w:r><w:t>^addImage .ImageData 200 200~</w:t></w:r>
         </w:p>
         <w:p>
-            <w:r><w:t>Footer: {{.Footer}}</w:t></w:r>
+            <w:r><w:t>Footer: ^.Footer~</w:t></w:r>
         </w:p>
     </w:body>
 </w:document>`
@@ -245,6 +245,45 @@ func TestTemplate_Integration_ErrorHandling(t *testing.T) {
 	var result bytes.Buffer
 	err := tmpl.Execute(&result, nil)
 	assert.Error(t, err)
+}
+
+func TestTemplate_Integration_Debug(t *testing.T) {
+	docxData := createMinimalDocx()
+
+	// Посмотрим на содержимое document.xml до обработки
+	docXMLBefore := extractDocumentXML(t, docxData)
+	t.Logf("Document XML before processing: %s", docXMLBefore)
+
+	// Тестируем FixBrokenTemplateKeys напрямую
+	processor := NewXMLProcessor()
+	processedXML := processor.FixBrokenTemplateKeys(docXMLBefore)
+	t.Logf("Document XML after FixBrokenTemplateKeys: %s", processedXML)
+
+	// Тестируем все этапы обработки
+	processedXML = processor.PrepareRangeData(processedXML)
+	t.Logf("Document XML after PrepareRangeData: %s", processedXML)
+
+	processedXML = processor.PrepareAddImageData(processedXML)
+	t.Logf("Document XML after PrepareAddImageData: %s", processedXML)
+
+	tmpl := New("test")
+	tmpl.ParseDocxFileData(docxData)
+	if tmpl.err != nil {
+		t.Logf("Error during parsing: %v", tmpl.err)
+		return
+	}
+
+	// Попробуем получить обработанное содержимое
+	data := TestData{
+		Title:  "Test Title",
+		Footer: "Test Footer",
+	}
+
+	var result bytes.Buffer
+	err := tmpl.Execute(&result, data)
+	if err != nil {
+		t.Logf("Error during execution: %v", err)
+	}
 }
 
 // Вспомогательные функции для тестов
