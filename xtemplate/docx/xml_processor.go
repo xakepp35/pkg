@@ -2,11 +2,10 @@ package docx
 
 import (
 	"bytes"
+	"errors"
+	"github.com/xakepp35/pkg/xerrors"
 	"regexp"
 	"strings"
-
-	"github.com/tdewolff/minify/v2"
-	"github.com/tdewolff/minify/v2/xml"
 )
 
 // XMLProcessor отвечает за обработку XML содержимого документа
@@ -38,12 +37,45 @@ func (xp *XMLProcessor) SetDelimiterPair(open, close rune) {
 	xp.closeRune = close
 }
 
+func (xp *XMLProcessor) validate(xml string) error {
+	open := 0
+	for i, c := range xml {
+		if c == xp.openRune {
+			open++
+			if open > 1 {
+				return xerrors.Err(nil).Int("place", i).Msg("nested open delimiter")
+			}
+		}
+		if c == xp.closeRune {
+			open--
+			if open < 0 {
+				return xerrors.Err(nil).Int("place", i).Msg("closed delimiter, but not open")
+			}
+		}
+	}
+
+	if open != 0 {
+		return errors.New("broken delimiter")
+	}
+
+	return nil
+}
+
 func (xp *XMLProcessor) FixBrokenTemplateKeys(xml string) string {
 	var result bytes.Buffer
 	inTemplate := false
 	inTag := false
 
+	if !strings.Contains(xml, string(xp.openRune)) && !strings.Contains(xml, string(xp.closeRune)) {
+		return xml
+	}
+
+	xml = xp.minifyXML(xml)
+
 	for _, c := range xml {
+		d := string(c)
+		_ = d
+
 		if inTemplate {
 			if c == xp.closeRune {
 				inTemplate = false
@@ -76,23 +108,10 @@ func (xp *XMLProcessor) FixBrokenTemplateKeys(xml string) string {
 	return result.String()
 }
 
-// minifyXML удаляет все пробелы, табы и переносы строк между XML тегами
+var reBetweenTags = regexp.MustCompile(`>\s+<`)
+
 func (xp *XMLProcessor) minifyXML(xmlContent string) string {
-	m := minify.New()
-	m.AddFunc("text/xml", xml.Minify)
-
-	result, err := m.String("text/xml", xmlContent)
-	if err != nil {
-		// Если минификация не удалась, возвращаем оригинал
-		return xmlContent
-	}
-
-	return result
-}
-
-// isLetter проверяет, является ли символ буквой
-func isLetter(r rune) bool {
-	return (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z')
+	return reBetweenTags.ReplaceAllString(xmlContent, "><")
 }
 
 // isAllowedBetweenRuns проверяет, содержит ли текст только разрешенные элементы между <w:r> тегами
