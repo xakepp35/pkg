@@ -16,6 +16,9 @@ type XMLProcessor struct {
 	wrRegexp       *regexp.Regexp // для поиска <w:r>...</w:r>
 	rowRegexp      *regexp.Regexp // для поиска строк таблицы
 	addImageRegexp *regexp.Regexp // для поиска параграфов с изображениями
+
+	opedRune  rune
+	closeRune rune
 }
 
 // NewXMLProcessor создает новый процессор XML
@@ -25,7 +28,14 @@ func NewXMLProcessor() *XMLProcessor {
 		wrRegexp:       regexp.MustCompile(`(?s)<w:r[\s\S]*?<w:t[\s\S]*?>[\s\S]*?</w:t>[\s\S]*?</w:r>`),
 		rowRegexp:      regexp.MustCompile(`(?s)(<w:tr.*?</w:tr>)`),
 		addImageRegexp: regexp.MustCompile(`(?s)(<w:p.*?</w:p>)`),
+		opedRune:       '^',
+		closeRune:      '~',
 	}
+}
+
+func (xp *XMLProcessor) SetDelimiterPair(open, close rune) {
+	xp.opedRune = open
+	xp.closeRune = close
 }
 
 func (xp *XMLProcessor) FixBrokenTemplateKeys(xml string) string {
