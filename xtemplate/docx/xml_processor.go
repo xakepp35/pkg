@@ -17,7 +17,7 @@ type XMLProcessor struct {
 	rowRegexp      *regexp.Regexp // для поиска строк таблицы
 	addImageRegexp *regexp.Regexp // для поиска параграфов с изображениями
 
-	opedRune  rune
+	openRune  rune
 	closeRune rune
 }
 
@@ -28,13 +28,13 @@ func NewXMLProcessor() *XMLProcessor {
 		wrRegexp:       regexp.MustCompile(`(?s)<w:r[\s\S]*?<w:t[\s\S]*?>[\s\S]*?</w:t>[\s\S]*?</w:r>`),
 		rowRegexp:      regexp.MustCompile(`(?s)(<w:tr.*?</w:tr>)`),
 		addImageRegexp: regexp.MustCompile(`(?s)(<w:p.*?</w:p>)`),
-		opedRune:       '^',
+		openRune:       '^',
 		closeRune:      '~',
 	}
 }
 
 func (xp *XMLProcessor) SetDelimiterPair(open, close rune) {
-	xp.opedRune = open
+	xp.openRune = open
 	xp.closeRune = close
 }
 
@@ -43,11 +43,9 @@ func (xp *XMLProcessor) FixBrokenTemplateKeys(xml string) string {
 	inTemplate := false
 	inTag := false
 
-	for i := 0; i < len(xml); i++ {
-		c := xml[i]
-
+	for _, c := range xml {
 		if inTemplate {
-			if c == '~' {
+			if c == xp.closeRune {
 				inTemplate = false
 				result.WriteString("}}")
 				continue
@@ -61,18 +59,18 @@ func (xp *XMLProcessor) FixBrokenTemplateKeys(xml string) string {
 				continue
 			}
 			if !inTag {
-				result.WriteByte(c)
+				result.WriteRune(c)
 			}
 			continue
 		}
 
-		if c == '^' {
+		if c == xp.openRune {
 			inTemplate = true
 			result.WriteString("{{")
 			continue
 		}
 
-		result.WriteByte(c)
+		result.WriteRune(c)
 	}
 
 	return result.String()

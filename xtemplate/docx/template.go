@@ -49,6 +49,10 @@ func New(name string) *Template {
 	return t
 }
 
+func (t *Template) SetDelimiterPair(open, close rune) {
+	t.xmlProcessor.SetDelimiterPair(open, close)
+}
+
 // ParseDocxFileData парсит данные DOCX файла
 func (t *Template) ParseDocxFileData(data []byte) *Template {
 	t.err = nil
