@@ -2,29 +2,52 @@ package xtrace
 
 import (
 	"context"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog/log"
 	"github.com/valyala/fasthttp"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
+	"time"
 )
 
 var propagator = otel.GetTextMapPropagator()
 
 func FiberTraceMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
+		start := time.Now()
 		ctx := propagator.Extract(c.Context(), propagation.HeaderCarrier(c.GetReqHeaders()))
 		ctx, span := otel.Tracer(defaultTracerName).Start(ctx, c.Path(), trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
-		// при необходимости span.SpanContext().TraceID().String()
+		span.SetAttributes(
+			attribute.String("http.method", c.Method()),
+			attribute.String("http.url", c.OriginalURL()),
+			attribute.String("http.client_ip", c.IP()),
+			attribute.String("http.user_agent", c.Get(fiber.HeaderUserAgent)),
+			attribute.String("trace.id", span.SpanContext().TraceID().String()),
+		)
 
 		c.SetUserContext(ctx)
+		err := c.Next()
+
+		span.SetAttributes(
+			attribute.Int("http.status_code", c.Response().StatusCode()),
+			attribute.String("http.response_size", fmt.Sprintf("%d", len(c.Response().Body()))),
+		)
+		if err != nil {
+			span.RecordError(err)
+		}
+		span.AddEvent("request_completed", trace.WithAttributes(
+			attribute.String("duration", time.Since(start).String()),
+		))
+
 		propagator.Inject(ctx, fasthttpResponseCarrier{h: &c.Response().Header})
-		return c.Next()
+		return err
 	}
 }
 
@@ -33,26 +56,52 @@ const TraceCtxKey = "trace_ctx"
 func FasthttpTraceMiddleware() func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
+			start := time.Now()
 			ctxOT := propagator.Extract(context.Background(), fasthttpRequestCarrier{h: &ctx.Request.Header})
 			ctxOT, span := otel.Tracer(defaultTracerName).Start(ctxOT, string(ctx.Path()), trace.WithSpanKind(trace.SpanKindServer))
 			defer span.End()
 
+			span.SetAttributes(
+				attribute.String("http.method", string(ctx.Method())),
+				attribute.String("http.url", ctx.URI().String()),
+				attribute.String("http.client_ip", ctx.RemoteIP().String()),
+				attribute.String("http.user_agent", string(ctx.UserAgent())),
+				attribute.String("trace.id", span.SpanContext().TraceID().String()),
+			)
+
 			ctx.SetUserValue(TraceCtxKey, ctxOT)
-			propagator.Inject(ctxOT, fasthttpResponseCarrier{h: &ctx.Response.Header})
 			next(ctx)
+
+			span.SetAttributes(
+				attribute.Int("http.status_code", ctx.Response.StatusCode()),
+				attribute.Int("http.response_size", len(ctx.Response.Body())),
+			)
+			span.AddEvent("request_completed", trace.WithAttributes(
+				attribute.String("duration", time.Since(start).String()),
+			))
+			propagator.Inject(ctxOT, fasthttpResponseCarrier{h: &ctx.Response.Header})
 		}
 	}
 }
 
 func GRPCUnaryTraceInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-		md, _ := metadata.FromIncomingContext(ctx)
-		carrier := metadataCarrier(md)
-		ctxOT := propagator.Extract(ctx, carrier)
+		ctxOT := propagator.Extract(ctx, metadataCarrierFromContext(ctx))
 		ctxOT, span := otel.Tracer(defaultTracerName).Start(ctxOT, info.FullMethod, trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
+		span.SetAttributes(
+			attribute.String("rpc.system", "grpc"),
+			attribute.String("rpc.method", info.FullMethod),
+			attribute.String("trace.id", span.SpanContext().TraceID().String()),
+		)
+
 		resp, err := handler(ctxOT, req)
+		if err != nil {
+			span.RecordError(err)
+		}
+
+		span.AddEvent("grpc_response_sent")
 
 		setHeaderErr := grpc.SetHeader(ctx, metadata.Pairs(TraceHeader, span.SpanContext().TraceID().String()))
 		if setHeaderErr != nil {
@@ -65,21 +114,29 @@ func GRPCUnaryTraceInterceptor() grpc.UnaryServerInterceptor {
 
 func GRPCStreamTraceInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
-		md, _ := metadata.FromIncomingContext(ss.Context())
-		carrier := metadataCarrier(md)
-		ctxOT := propagator.Extract(ss.Context(), carrier)
+		ctxOT := propagator.Extract(ss.Context(), metadataCarrierFromContext(ss.Context()))
 		ctxOT, span := otel.Tracer(defaultTracerName).Start(ctxOT, info.FullMethod, trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
-		wrapper := &wrappedStream{ServerStream: ss, ctx: ctxOT}
+		span.SetAttributes(
+			attribute.String("rpc.system", "grpc"),
+			attribute.String("rpc.method", info.FullMethod),
+			attribute.String("rpc.stream", fmt.Sprintf("%v", info.IsServerStream)),
+			attribute.String("trace.id", span.SpanContext().TraceID().String()),
+		)
 
-		// Отправляем trace-id в заголовках
-		header := metadata.Pairs(TraceHeader, span.SpanContext().TraceID().String())
-		if err := wrapper.SendHeader(header); err != nil {
+		wrapper := &wrappedStream{ServerStream: ss, ctx: ctxOT}
+		if err := wrapper.SendHeader(metadata.Pairs(TraceHeader, span.SpanContext().TraceID().String())); err != nil {
 			log.Warn().Err(err).Msg("stream.SendHeader failed")
 		}
 
-		return handler(srv, wrapper)
+		span.AddEvent("grpc_stream_started")
+		err := handler(srv, wrapper)
+		if err != nil {
+			span.RecordError(err)
+		}
+		span.AddEvent("grpc_stream_completed")
+		return err
 	}
 }
 
@@ -89,6 +146,11 @@ type wrappedStream struct {
 }
 
 func (w *wrappedStream) Context() context.Context { return w.ctx }
+
+func metadataCarrierFromContext(ctx context.Context) metadataCarrier {
+	md, _ := metadata.FromIncomingContext(ctx)
+	return metadataCarrier(md)
+}
 
 type metadataCarrier metadata.MD
 
