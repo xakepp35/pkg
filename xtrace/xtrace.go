@@ -10,6 +10,7 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
+	"time"
 )
 
 const defaultTracerName = "xtrace"
@@ -39,7 +40,7 @@ func InitTracer(serviceName string, opts ...otlptracegrpc.Option) error {
 
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sampler),
-		sdktrace.WithBatcher(exporter),
+		sdktrace.WithBatcher(exporter, sdktrace.WithBatchTimeout(time.Second)),
 		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String(serviceName),
