@@ -42,8 +42,6 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P()
 
 	if len(method.Input.Fields) == 1 && method.Input.Fields[0].Desc.Kind() == protoreflect.BytesKind {
-		g.P("var req ", method.Input.GoIdent)
-		g.P()
 		g.P("// Bind uploaded file from multipart/form-data")
 		g.P("header, err := c.FormFile(\"file\")")
 		g.P("if err != nil {")
