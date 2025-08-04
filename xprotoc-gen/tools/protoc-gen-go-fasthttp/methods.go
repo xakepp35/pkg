@@ -65,8 +65,6 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 		return
 	}
 
-	g.P("var req ", method.Input.GoIdent)
-	g.P()
 	g.P("if err = ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
 	g.P("    ", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
 	g.P("    return")
