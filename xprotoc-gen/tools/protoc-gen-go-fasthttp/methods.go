@@ -37,6 +37,10 @@ func genMethod(g *protogen.GeneratedFile, method *protogen.Method) {
 func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	readAll := protogen.GoIdent{GoName: "ReadAll", GoImportPath: "io"}
 
+	g.P("var req ", method.Input.GoIdent)
+	g.P("var err error")
+	g.P()
+
 	if len(method.Input.Fields) == 1 && method.Input.Fields[0].Desc.Kind() == protoreflect.BytesKind {
 		g.P("var req ", method.Input.GoIdent)
 		g.P()
@@ -65,7 +69,7 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 
 	g.P("var req ", method.Input.GoIdent)
 	g.P()
-	g.P("if err := ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
+	g.P("if err = ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
 	g.P("    ", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
 	g.P("    return")
 	g.P("}")
@@ -79,7 +83,7 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 		}
 	}
 	if hasValidation {
-		g.P("if err := req.Validate(); err != nil {")
+		g.P("if err = req.Validate(); err != nil {")
 		g.P("    ", errorHandlersImport.Ident(*flagValidationErrorHandleFunc), "(c, err)")
 		g.P("    return")
 		g.P("}")
@@ -90,7 +94,6 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("var (")
 	g.P("resp any")
-	// g.P("err  error")
 	g.P(")")
 
 	g.P("if r.interceptor != nil {")
