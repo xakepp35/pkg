@@ -10,7 +10,6 @@ import (
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
-	"os"
 )
 
 const defaultTracerName = "xtrace"
@@ -30,10 +29,7 @@ func InitTracer(serviceName string, opts ...otlptracegrpc.Option) error {
 
 	endpoint := env.Get("OTEL_DEFAULT_ENDPOINT", "localhost:4317")
 
-	sampler := sdktrace.ParentBased(sdktrace.TraceIDRatioBased(0.01))
-	if os.Getenv("OTEL_TRACES_SAMPLER") == "always_on" {
-		sampler = sdktrace.AlwaysSample()
-	}
+	sampler := sdktrace.ParentBased(sdktrace.TraceIDRatioBased(env.Float64("OTEL_TRACES_SAMPLER_RATIO", 1)))
 
 	opts = append(opts, otlptracegrpc.WithEndpoint(endpoint))
 	exporter, err := otlptracegrpc.New(context.Background(), opts...)
