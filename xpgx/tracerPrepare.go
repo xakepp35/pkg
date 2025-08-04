@@ -2,6 +2,9 @@ package xpgx
 
 import (
 	"context"
+	"github.com/xakepp35/pkg/xtrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"sync"
 	"time"
 
@@ -27,7 +30,11 @@ type tracerPrepareData struct {
 	StartedAt time.Time
 }
 
-func (s *tracerPrepare) TracePrepareStart(ctx context.Context, conn *pgx.Conn, data pgx.TracePrepareStartData) context.Context {
+func (s *tracerPrepare) TracePrepareStart(ctx context.Context, _ *pgx.Conn, data pgx.TracePrepareStartData) context.Context {
+	method := callerFunc(5)
+	ctx, span := xtrace.Trace(ctx, method+" (prepare)", trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(attribute.String("repo.method", method))
+
 	traceData := s.pool.Get().(*tracerPrepareData)
 	traceData.Name = data.Name
 	traceData.SQL = data.SQL
@@ -36,6 +43,16 @@ func (s *tracerPrepare) TracePrepareStart(ctx context.Context, conn *pgx.Conn, d
 }
 
 func (s *tracerPrepare) TracePrepareEnd(ctx context.Context, conn *pgx.Conn, data pgx.TracePrepareEndData) {
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		return
+	}
+	if data.Err != nil {
+		span.RecordError(data.Err)
+	} else {
+		span.AddEvent("Prepare completed")
+	}
+
 	traceData, _ := ctx.Value(s).(*tracerPrepareData)
 	duration := time.Since(traceData.StartedAt)
 	xlog.ErrDebug(data.Err).

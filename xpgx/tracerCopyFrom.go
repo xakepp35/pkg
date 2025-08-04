@@ -2,6 +2,9 @@ package xpgx
 
 import (
 	"context"
+	"github.com/xakepp35/pkg/xtrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"sync"
 	"time"
 
@@ -27,15 +30,34 @@ type tracerCopyFromData struct {
 	StartedAt time.Time
 }
 
-func (s *tracerCopyFrom) TraceCopyFromStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceCopyFromStartData) context.Context {
+func (s *tracerCopyFrom) TraceCopyFromStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceCopyFromStartData) context.Context {
+	method := callerFunc(5)
+	ctx, span := xtrace.Trace(ctx, method+" (copy_from)", trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(
+		attribute.String("db.table", data.TableName.Sanitize()),
+		attribute.String("repo.method", method),
+	)
+
 	traceData := s.pool.Get().(*tracerCopyFromData)
-	traceData.Tables = []string(data.TableName)
+	traceData.Tables = data.TableName
 	traceData.Columns = data.ColumnNames
 	traceData.StartedAt = time.Now()
 	return context.WithValue(ctx, s, traceData)
 }
 
 func (s *tracerCopyFrom) TraceCopyFromEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceCopyFromEndData) {
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		return
+	}
+	if data.Err != nil {
+		span.RecordError(data.Err)
+	} else {
+		span.SetAttributes(attribute.Int64("db.rows", data.CommandTag.RowsAffected()))
+		span.AddEvent("CopyFrom completed")
+	}
+	span.End()
+
 	traceData, _ := ctx.Value(s).(*tracerCopyFromData)
 	duration := time.Since(traceData.StartedAt)
 	xlog.ErrDebug(data.Err).

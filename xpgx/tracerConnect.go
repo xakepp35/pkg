@@ -2,6 +2,9 @@ package xpgx
 
 import (
 	"context"
+	"github.com/xakepp35/pkg/xtrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"sync"
 	"time"
 
@@ -29,6 +32,13 @@ type tracerConnectData struct {
 }
 
 func (s *tracerConnect) TraceConnectStart(ctx context.Context, data pgx.TraceConnectStartData) context.Context {
+	ctx, span := xtrace.Trace(ctx, "db.connect", trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(
+		attribute.String("db.host", data.ConnConfig.Host),
+		attribute.String("db.user", data.ConnConfig.User),
+		attribute.String("db.database", data.ConnConfig.Database),
+	)
+
 	traceData := s.pool.Get().(*tracerConnectData)
 	traceData.ConnConfig = data.ConnConfig
 	traceData.StartedAt = time.Now()
@@ -36,6 +46,17 @@ func (s *tracerConnect) TraceConnectStart(ctx context.Context, data pgx.TraceCon
 }
 
 func (s *tracerConnect) TraceConnectEnd(ctx context.Context, data pgx.TraceConnectEndData) {
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		return
+	}
+	if data.Err != nil {
+		span.RecordError(data.Err)
+	} else {
+		span.AddEvent("Connect successful")
+	}
+
+	span.End()
 	traceData, _ := ctx.Value(s).(*tracerConnectData)
 	duration := time.Since(traceData.StartedAt)
 	xlog.ErrDebug(data.Err).

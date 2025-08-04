@@ -2,6 +2,9 @@ package xpgx
 
 import (
 	"context"
+	"github.com/xakepp35/pkg/xtrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"sync"
 	"time"
 
@@ -26,14 +29,27 @@ type tracerBatchData struct {
 	StartedAt time.Time
 }
 
-func (s *tracerBatch) TraceBatchStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceBatchStartData) context.Context {
+func (s *tracerBatch) TraceBatchStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceBatchStartData) context.Context {
 	traceData := s.pool.Get().(*tracerBatchData)
 	traceData.Batch = data.Batch
 	traceData.StartedAt = time.Now()
+
+	method := callerFunc(5)
+	ctx, span := xtrace.Trace(ctx, method+" (batch)", trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(
+		attribute.Int("db.batch_size", len(data.Batch.QueuedQueries)),
+		attribute.String("repo.method", method),
+	)
+
 	return context.WithValue(ctx, s, traceData)
 }
 
 func (s *tracerBatch) TraceBatchQuery(ctx context.Context, conn *pgx.Conn, data pgx.TraceBatchQueryData) {
+	span := trace.SpanFromContext(ctx)
+	if span.IsRecording() {
+		span.AddEvent("Batch query")
+	}
+
 	traceData, _ := ctx.Value(s).(*tracerBatchData)
 	duration := time.Since(traceData.StartedAt)
 	xlog.ErrDebug(data.Err).
@@ -46,6 +62,17 @@ func (s *tracerBatch) TraceBatchQuery(ctx context.Context, conn *pgx.Conn, data 
 }
 
 func (s *tracerBatch) TraceBatchEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceBatchEndData) {
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		return
+	}
+	if data.Err != nil {
+		span.RecordError(data.Err)
+	} else {
+		span.AddEvent("Batch completed")
+	}
+	span.End()
+
 	traceData, _ := ctx.Value(s).(*tracerBatchData)
 	duration := time.Since(traceData.StartedAt)
 	xlog.ErrDebug(data.Err).
