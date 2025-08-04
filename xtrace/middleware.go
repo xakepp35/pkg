@@ -14,10 +14,10 @@ import (
 
 var propagator = otel.GetTextMapPropagator()
 
-func FiberTraceMiddleware(tracer trace.Tracer) fiber.Handler {
+func FiberTraceMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		ctx := propagator.Extract(c.Context(), propagation.HeaderCarrier(c.GetReqHeaders()))
-		ctx, span := tracer.Start(ctx, c.Path(), trace.WithSpanKind(trace.SpanKindServer))
+		ctx, span := otel.Tracer(defaultTracerName).Start(ctx, c.Path(), trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
 		// при необходимости span.SpanContext().TraceID().String()
@@ -30,11 +30,11 @@ func FiberTraceMiddleware(tracer trace.Tracer) fiber.Handler {
 
 const TraceCtxKey = "trace_ctx"
 
-func FasthttpTraceMiddleware(tracer trace.Tracer) func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
+func FasthttpTraceMiddleware() func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
 			ctxOT := propagator.Extract(context.Background(), fasthttpRequestCarrier{h: &ctx.Request.Header})
-			ctxOT, span := tracer.Start(ctxOT, string(ctx.Path()), trace.WithSpanKind(trace.SpanKindServer))
+			ctxOT, span := otel.Tracer(defaultTracerName).Start(ctxOT, string(ctx.Path()), trace.WithSpanKind(trace.SpanKindServer))
 			defer span.End()
 
 			ctx.SetUserValue(TraceCtxKey, ctxOT)
@@ -44,12 +44,12 @@ func FasthttpTraceMiddleware(tracer trace.Tracer) func(next fasthttp.RequestHand
 	}
 }
 
-func GRPCUnaryTraceInterceptor(tracer trace.Tracer) grpc.UnaryServerInterceptor {
+func GRPCUnaryTraceInterceptor() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		md, _ := metadata.FromIncomingContext(ctx)
 		carrier := metadataCarrier(md)
 		ctxOT := propagator.Extract(ctx, carrier)
-		ctxOT, span := tracer.Start(ctxOT, info.FullMethod, trace.WithSpanKind(trace.SpanKindServer))
+		ctxOT, span := otel.Tracer(defaultTracerName).Start(ctxOT, info.FullMethod, trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
 		resp, err := handler(ctxOT, req)
@@ -63,12 +63,12 @@ func GRPCUnaryTraceInterceptor(tracer trace.Tracer) grpc.UnaryServerInterceptor 
 	}
 }
 
-func GRPCStreamTraceInterceptor(tracer trace.Tracer) grpc.StreamServerInterceptor {
+func GRPCStreamTraceInterceptor() grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		md, _ := metadata.FromIncomingContext(ss.Context())
 		carrier := metadataCarrier(md)
 		ctxOT := propagator.Extract(ss.Context(), carrier)
-		ctxOT, span := tracer.Start(ctxOT, info.FullMethod, trace.WithSpanKind(trace.SpanKindServer))
+		ctxOT, span := otel.Tracer(defaultTracerName).Start(ctxOT, info.FullMethod, trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
 
 		wrapper := &wrappedStream{ServerStream: ss, ctx: ctxOT}
