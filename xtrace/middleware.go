@@ -12,14 +12,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
-	"time"
 )
 
 var propagator = otel.GetTextMapPropagator()
 
 func FiberTraceMiddleware() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		start := time.Now()
 		ctx := propagator.Extract(c.Context(), propagation.HeaderCarrier(c.GetReqHeaders()))
 		ctx, span := otel.Tracer(defaultTracerName).Start(ctx, c.Path(), trace.WithSpanKind(trace.SpanKindServer))
 		defer span.End()
@@ -42,9 +40,7 @@ func FiberTraceMiddleware() fiber.Handler {
 		if err != nil {
 			span.RecordError(err)
 		}
-		span.AddEvent("request_completed", trace.WithAttributes(
-			attribute.String("duration", time.Since(start).String()),
-		))
+		span.AddEvent("request_completed")
 
 		propagator.Inject(ctx, fasthttpResponseCarrier{h: &c.Response().Header})
 		return err
@@ -56,7 +52,6 @@ const TraceCtxKey = "trace_ctx"
 func FasthttpTraceMiddleware() func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(ctx *fasthttp.RequestCtx) {
-			start := time.Now()
 			ctxOT := propagator.Extract(context.Background(), fasthttpRequestCarrier{h: &ctx.Request.Header})
 			ctxOT, span := otel.Tracer(defaultTracerName).Start(ctxOT, string(ctx.Path()), trace.WithSpanKind(trace.SpanKindServer))
 			defer span.End()
@@ -76,9 +71,7 @@ func FasthttpTraceMiddleware() func(next fasthttp.RequestHandler) fasthttp.Reque
 				attribute.Int("http.status_code", ctx.Response.StatusCode()),
 				attribute.Int("http.response_size", len(ctx.Response.Body())),
 			)
-			span.AddEvent("request_completed", trace.WithAttributes(
-				attribute.String("duration", time.Since(start).String()),
-			))
+			span.AddEvent("request_completed")
 			propagator.Inject(ctxOT, fasthttpResponseCarrier{h: &ctx.Response.Header})
 		}
 	}
