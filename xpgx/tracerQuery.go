@@ -2,6 +2,9 @@ package xpgx
 
 import (
 	"context"
+	"github.com/xakepp35/pkg/xtrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"sync"
 	"time"
 
@@ -30,6 +33,16 @@ type tracerQueryData struct {
 }
 
 func (s *tracerQuery) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
+	method := callerFunc(5)
+	ctx, span := xtrace.Trace(ctx, method, trace.WithSpanKind(trace.SpanKindClient))
+	span.SetAttributes(
+		attribute.String("db.system", "postgresql"),
+		attribute.String("repo.method", method),
+		attribute.String("db.user", conn.Config().User),
+		attribute.String("db.host", conn.Config().Host),
+		attribute.String("db.database", conn.Config().Database),
+	)
+
 	traceData := s.pool.Get().(*tracerQueryData)
 	traceData.Sql = data.SQL
 	traceData.Args = data.Args
@@ -38,6 +51,17 @@ func (s *tracerQuery) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data 
 }
 
 func (s *tracerQuery) TraceQueryEnd(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryEndData) {
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		return
+	}
+	if data.Err != nil {
+		span.RecordError(data.Err)
+	} else {
+		span.AddEvent("DB query executed")
+	}
+	span.End()
+
 	traceData, _ := ctx.Value(s).(*tracerQueryData)
 	duration := time.Since(traceData.StartedAt)
 	xlog.ErrDebug(data.Err).

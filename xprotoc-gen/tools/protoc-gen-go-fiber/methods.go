@@ -18,7 +18,7 @@ import (
 func genMethod(g *protogen.GeneratedFile, method *protogen.Method) error {
 	g.P("func (r *", serviceRouterStructName(method.Parent), ")", genRouteMethodName(method), `(c *`, fiberImport.Ident("Ctx"), `) error {`)
 
-	g.P("ctx, cancel := ", contextImport.Ident("WithCancel"), "(c.Context())")
+	g.P("ctx, cancel := ", contextImport.Ident("WithCancel"), "(c.UserContext())")
 	g.P("defer cancel()\n")
 
 	g.P("md := ", grpcMetadataImport.Ident("New"), "(nil)")
