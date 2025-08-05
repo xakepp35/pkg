@@ -57,45 +57,60 @@ func patch(sw map[string]interface{}) {
 
 	for _, rawPathItem := range paths {
 		ops, _ := rawPathItem.(map[string]interface{})
-		for _, rawOp := range ops {
+		for method, rawOp := range ops {
 			op, _ := rawOp.(map[string]interface{})
+			method = strings.ToLower(method)
 
-			// 1) ensure consumes: multipart/form-data
-			if cons, ok := op["consumes"].([]interface{}); ok {
-				found := false
-				for _, c := range cons {
-					if c == multipart {
-						found = true
-						break
-					}
-				}
-				if !found {
-					op["consumes"] = append(cons, multipart)
-				}
-			} else {
-				op["consumes"] = []interface{}{multipart}
-			}
+			params, _ := op["parameters"].([]interface{})
+			isBinaryUpload := false
 
-			// 2) rewrite the single body→binary parameter
-			if params, ok := op["parameters"].([]interface{}); ok {
-				for i, rawParam := range params {
-					p, _ := rawParam.(map[string]interface{})
-					if p["in"] == "body" {
-						if schema, ok := p["schema"].(map[string]interface{}); ok {
-							if schema["type"] == "string" &&
-								(schema["format"] == "binary" || schema["format"] == "bytes") {
-								// mutate into a file upload
-								delete(p, "schema")
-								p["in"] = "formData"
-								p["type"] = "file"
-								// keep any existing description
-								// p["description"] = schema["description"]
-								params[i] = p
-							}
+			// Определяем, есть ли binary поле в body
+			for _, rawParam := range params {
+				p, _ := rawParam.(map[string]interface{})
+				if p["in"] == "body" {
+					if schema, ok := p["schema"].(map[string]interface{}); ok {
+						if schema["type"] == "string" &&
+							(schema["format"] == "binary" || schema["format"] == "bytes") {
+							isBinaryUpload = true
+							break
 						}
 					}
 				}
-				op["parameters"] = params
+			}
+
+			// 1) Binary POST → formData
+			if method == "post" && isBinaryUpload {
+				op["consumes"] = []interface{}{multipart}
+				var newParams []interface{}
+				for _, rawParam := range params {
+					p, _ := rawParam.(map[string]interface{})
+					if p["in"] == "body" {
+						// binary → file
+						if schema, ok := p["schema"].(map[string]interface{}); ok {
+							if schema["type"] == "string" &&
+								(schema["format"] == "binary" || schema["format"] == "bytes") {
+								delete(p, "schema")
+								p["in"] = "formData"
+								p["type"] = "file"
+							}
+						}
+					}
+					if p["name"] == "file_name" {
+						p["in"] = "formData"
+						p["type"] = "string"
+					}
+					newParams = append(newParams, p)
+				}
+				op["parameters"] = newParams
+				continue
+			}
+
+			// 2) GET с google.api.HttpBody → application/octet-stream
+			if method == "get" {
+				if produces, ok := op["produces"].([]interface{}); !ok || len(produces) == 0 {
+					op["produces"] = []interface{}{"application/octet-stream"}
+				}
+				delete(op, "consumes")
 			}
 		}
 	}
