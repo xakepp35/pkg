@@ -41,6 +41,39 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("var err error")
 	g.P()
 
+	stringsImportToUpper := protogen.GoIdent{
+		GoImportPath: "strings",
+		GoName:       "ToUpper",
+	}
+	stringsImportHasPrefix := protogen.GoIdent{
+		GoImportPath: "strings",
+		GoName:       "HasPrefix",
+	}
+	fmtImport := protogen.GoIdent{
+		GoImportPath: "fmt",
+		GoName:       "Sprint",
+	}
+
+	g.P("httpMethod := ", g.QualifiedGoIdent(stringsImportToUpper), "(string(c.Method()))")
+	g.P("if httpMethod == \"GET\" || httpMethod == \"DELETE\" {")
+	// Сначала path-параметры
+	for _, field := range method.Input.Fields {
+		if field.Desc.Kind() == protoreflect.StringKind {
+			g.P(fmt.Sprintf("    if vPath := c.UserValue(%q); vPath != nil {", field.Desc.Name()))
+			g.P("        req.", field.GoName, " = ", g.QualifiedGoIdent(fmtImport), "(vPath)")
+			g.P("    }")
+		}
+	}
+	// Потом query-параметры (перезаписывают path)
+	for _, field := range method.Input.Fields {
+		if field.Desc.Kind() == protoreflect.StringKind {
+			g.P(fmt.Sprintf("    if vQuery := c.QueryArgs().Peek(%q); len(vQuery) > 0 {", field.Desc.Name()))
+			g.P(fmt.Sprintf("        req.%s = string(vQuery)", field.GoName))
+			g.P("    }")
+		}
+	}
+	g.P("} else {")
+
 	var bytesField *protogen.Field
 	for _, field := range method.Input.Fields {
 		if field.Desc.Kind() == protoreflect.BytesKind {
@@ -54,13 +87,8 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 		fieldNameGo := bytesField.GoName
 		fieldNameProto := bytesField.Desc.Name()
 
-		stringsImport := protogen.GoIdent{
-			GoImportPath: "strings",
-			GoName:       "HasPrefix",
-		}
-
 		g.P("contentType := string(c.Request.Header.ContentType())")
-		g.P("if ", g.QualifiedGoIdent(stringsImport), "(contentType, \"multipart/form-data\") {")
+		g.P("if ", g.QualifiedGoIdent(stringsImportHasPrefix), "(contentType, \"multipart/form-data\") {")
 		g.P(fmt.Sprintf("    if fh, errForm := c.FormFile(%q); errForm == nil {", fieldNameProto))
 		g.P("        if f, errOpen := fh.Open(); errOpen == nil {")
 		g.P("            defer f.Close()")
@@ -92,7 +120,7 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 		g.P("}")
 	}
 
-	g.P()
+	g.P("}")
 
 	hasValidation := false
 	for _, field := range method.Input.Fields {
@@ -134,44 +162,44 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("}")
 	g.P()
 
-	if method.Output.Desc.FullName() == protoreflect.FullName("google.api.HttpBody") {
-		httpBodyImport := g.QualifiedGoIdent(
-			protogen.GoIdent{
-				GoImportPath: "google.golang.org/genproto/googleapis/api/httpbody",
-				GoName:       "HttpBody",
-			},
-		)
+	// --- Всегда проверяем HttpBody ---
+	httpBodyImport := g.QualifiedGoIdent(
+		protogen.GoIdent{
+			GoImportPath: "google.golang.org/genproto/googleapis/api/httpbody",
+			GoName:       "HttpBody",
+		},
+	)
 
-		structpbImport := g.QualifiedGoIdent(
-			protogen.GoIdent{
-				GoImportPath: "google.golang.org/protobuf/types/known/structpb",
-				GoName:       "Struct",
-			},
-		)
+	structpbImport := g.QualifiedGoIdent(
+		protogen.GoIdent{
+			GoImportPath: "google.golang.org/protobuf/types/known/structpb",
+			GoName:       "Struct",
+		},
+	)
 
-		g.P("if hb, ok := resp.(*", httpBodyImport, "); ok {")
-		g.P("if ct := hb.GetContentType(); ct != \"\" { c.SetContentType(ct) }")
+	g.P("if hb, ok := resp.(*", httpBodyImport, "); ok {")
+	g.P("if ct := hb.GetContentType(); ct != \"\" { c.SetContentType(ct) }")
+	g.P("for _, ext := range hb.GetExtensions() {")
+	g.P("    var s ", structpbImport)
+	g.P("    if err := ext.UnmarshalTo(&s); err == nil {")
+	g.P("        for k, v := range s.Fields {")
+	g.P("            if v.GetKind() != nil {")
+	g.P("                c.Response.Header.Set(k, v.GetStringValue())")
+	g.P("            }")
+	g.P("        }")
+	g.P("    }")
+	g.P("}")
+	g.P("c.SetStatusCode(", fasthttpImport.Ident("StatusOK"), ")")
+	g.P("c.Write(hb.GetData())")
+	g.P("return")
+	g.P("}")
 
-		g.P("for _, ext := range hb.GetExtensions() {")
-		g.P("    var s ", structpbImport)
-		g.P("    if err := ext.UnmarshalTo(&s); err == nil {")
-		g.P("        for k, v := range s.Fields {")
-		g.P("            if v.GetKind() != nil {")
-		g.P("                c.Response.Header.Set(k, v.GetStringValue())")
-		g.P("            }")
-		g.P("        }")
-		g.P("    }")
-		g.P("}")
-		g.P()
-
-		g.P("c.SetStatusCode(", fasthttpImport.Ident("StatusOK"), ")")
-		g.P("c.Write(hb.GetData())")
-
-		g.P("return")
-		g.P("}")
-
-		return
-	}
+	g.P("if dataBytes, ok := resp.([]byte); ok {")
+	g.P("    c.SetContentType(\"application/octet-stream\")")
+	g.P("    c.SetStatusCode(", fasthttpImport.Ident("StatusOK"), ")")
+	g.P("    c.Write(dataBytes)")
+	g.P("    return")
+	g.P("}")
 
 	g.P("data, mErr := ", jsonUnmarshalImport.Ident("Marshal"), "(resp)")
 	g.P("if mErr != nil {")
