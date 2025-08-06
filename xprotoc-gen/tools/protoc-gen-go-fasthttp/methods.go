@@ -41,34 +41,57 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("var err error")
 	g.P()
 
-	if len(method.Input.Fields) == 1 && method.Input.Fields[0].Desc.Kind() == protoreflect.BytesKind {
-		g.P("// Bind uploaded file from multipart/form-data")
-		g.P("header, err := c.FormFile(\"file\")")
-		g.P("if err != nil {")
-		g.P("    c.Error(err.Error(), fasthttp.StatusBadRequest)")
-		g.P("    return")
-		g.P("}")
-		g.P("f, err := header.Open()")
-		g.P("if err != nil {")
-		g.P("    c.Error(err.Error(), fasthttp.StatusInternalServerError)")
-		g.P("    return")
-		g.P("}")
-		g.P("defer f.Close()")
-		g.P("data, err := ", g.QualifiedGoIdent(readAll), "(f)")
-		g.P("if err != nil {")
-		g.P("    c.Error(err.Error(), fasthttp.StatusInternalServerError)")
-		g.P("    return")
-		g.P("}")
-		g.P("// Populate the single []byte field on the proto message")
-		g.P("req.File = data")
-		g.P()
-		return
+	var bytesField *protogen.Field
+	for _, field := range method.Input.Fields {
+		if field.Desc.Kind() == protoreflect.BytesKind {
+			bytesField = field
+			break
+		}
 	}
 
-	g.P("if err = ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
-	g.P("    ", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
-	g.P("    return")
-	g.P("}")
+	if bytesField != nil {
+		// имя поля в Go и в форме
+		fieldNameGo := bytesField.GoName
+		fieldNameProto := bytesField.Desc.Name()
+
+		stringsImport := protogen.GoIdent{
+			GoImportPath: "strings",
+			GoName:       "HasPrefix",
+		}
+
+		g.P("contentType := string(c.Request.Header.ContentType())")
+		g.P("if ", g.QualifiedGoIdent(stringsImport), "(contentType, \"multipart/form-data\") {")
+		g.P(fmt.Sprintf("    if fh, errForm := c.FormFile(%q); errForm == nil {", fieldNameProto))
+		g.P("        if f, errOpen := fh.Open(); errOpen == nil {")
+		g.P("            defer f.Close()")
+		g.P("            if data, errRead := ", g.QualifiedGoIdent(readAll), "(f); errRead == nil {")
+		g.P(fmt.Sprintf("                req.%s = data", fieldNameGo))
+		g.P("            }")
+		g.P("        }")
+		g.P("    }")
+
+		// Дополнительно парсим остальные string-поля как FormValue
+		for _, field := range method.Input.Fields {
+			if field.Desc.Kind() == protoreflect.StringKind {
+				g.P(fmt.Sprintf("    if v := c.FormValue(%q); len(v) > 0 {", field.Desc.Name()))
+				g.P(fmt.Sprintf("        req.%s = string(v)", field.GoName))
+				g.P("    }")
+			}
+		}
+
+		g.P("} else {")
+		g.P("    if err = ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
+		g.P("        ", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
+		g.P("        return")
+		g.P("    }")
+		g.P("}")
+	} else {
+		g.P("if err = ", jsonUnmarshalImport.Ident("Unmarshal"), "(c.PostBody(), &req); err != nil {")
+		g.P("    ", errorHandlersImport.Ident(*flagUnmarshalErrorHandleFunc), "(c, err)")
+		g.P("    return")
+		g.P("}")
+	}
+
 	g.P()
 
 	hasValidation := false
