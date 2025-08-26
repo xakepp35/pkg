@@ -61,8 +61,11 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) error 
 		httpMethod, httpPath := httpMethodParamsFromGrpcMethod(method)
 
 		if httpMethod != "Get" {
+
+			g.P("if len(c.Body()) > 0 {")
 			g.P("if err := Unmarshal(c.Body(), &req); err != nil {")
 			g.P("\treturn HandleUnmarshalError(c, err)")
+			g.P("}")
 			g.P("}")
 			g.P()
 		}
