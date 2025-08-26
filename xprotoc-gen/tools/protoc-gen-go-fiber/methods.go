@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 	"unicode"
@@ -18,7 +19,7 @@ import (
 func genMethod(g *protogen.GeneratedFile, method *protogen.Method) error {
 	g.P("func (r *", serviceRouterStructName(method.Parent), ")", genRouteMethodName(method), `(c *`, fiberImport.Ident("Ctx"), `) error {`)
 
-	g.P("ctx, cancel := ", contextImport.Ident("WithCancel"), "(c.Context())")
+	g.P("ctx, cancel := ", contextImport.Ident("WithCancel"), "(c.UserContext())")
 	g.P("defer cancel()\n")
 
 	g.P("md := ", grpcMetadataImport.Ident("New"), "(nil)")
@@ -64,11 +65,11 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) error 
 			g.P("\treturn HandleUnmarshalError(c, err)")
 			g.P("}")
 			g.P()
-		} else {
-			err := genReadReqFromQueryOrParams(g, method.Input, httpPath)
-			if err != nil {
-				return err
-			}
+		}
+
+		err := genReadReqFromQueryOrParams(g, method.Input, httpMethod, httpPath)
+		if err != nil {
+			return err
 		}
 
 		hasValidation := false
@@ -90,7 +91,7 @@ func genMethodReqPart(g *protogen.GeneratedFile, method *protogen.Method) error 
 	return nil
 }
 
-func genReadReqFromQueryOrParams(g *protogen.GeneratedFile, message *protogen.Message, path string) error {
+func genReadReqFromQueryOrParams(g *protogen.GeneratedFile, message *protogen.Message, method, path string) error {
 	// 1. Check: all path fields must not be optional
 	for _, field := range message.Fields {
 		protoName := field.Desc.TextName()
@@ -112,6 +113,10 @@ func genReadReqFromQueryOrParams(g *protogen.GeneratedFile, message *protogen.Me
 			inPath = true
 		} else {
 			accessor = `c.Query("` + protoName + `")`
+		}
+
+		if !inPath && method != "Get" {
+			continue
 		}
 
 		// determine the parser
@@ -271,5 +276,8 @@ func httpMethodParamsFromGrpcMethod(method *protogen.Method) (string, string) {
 			path = "/"
 		}
 	}
+
+	path = regexp.MustCompile(`\{([^}]+)\}`).ReplaceAllString(path, `:$1`)
+
 	return methodType, path
 }
