@@ -53,6 +53,10 @@ func (t *Template) SetDelimiterPair(open, close rune) {
 	t.xmlProcessor.SetDelimiterPair(open, close)
 }
 
+func (t *Template) Err() error {
+	return t.err
+}
+
 // ParseDocxFileData парсит данные DOCX файла
 func (t *Template) ParseDocxFileData(data []byte) *Template {
 	t.err = nil
