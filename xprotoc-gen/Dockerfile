@@ -17,7 +17,7 @@ RUN go build -C ./tools/swagger-patcher -o /usr/local/bin/patch-swagger
 RUN make prepare
 RUN rm -rf tools
 
-FROM debian:bullseye-slim
+FROM ubuntu:24.04
 
 COPY --from=builder /usr/bin/make /bin/
 COPY --from=builder /usr/local/bin/protoc /usr/local/bin/
