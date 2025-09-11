@@ -129,12 +129,6 @@ func genReadReqFromQueryOrParams(g *protogen.GeneratedFile, message *protogen.Me
 		case protoreflect.StringKind:
 			parserFunc = "String"
 			parserType = "string"
-			if field.Desc.IsList() {
-				accessor = fmt.Sprintf(`%s(%s, ",")`, g.QualifiedGoIdent(stringsImport.Ident("Split")), accessor)
-			}
-			g.P("req.", fieldName, " = ", accessor)
-			g.P()
-			continue
 		case protoreflect.BoolKind:
 			parserFunc = "Bool"
 			parserType = "bool"
@@ -185,6 +179,12 @@ func genReadReqFromQueryOrParams(g *protogen.GeneratedFile, message *protogen.Me
 		case field.Desc.IsList():
 			if inPath {
 				return xerrors.Err(nil).Str("field", fieldName).Msg("repeated field in params")
+			}
+			if field.Desc.Kind() == protoreflect.StringKind {
+				accessor = fmt.Sprintf(`%s(%s, ",")`, g.QualifiedGoIdent(stringsImport.Ident("Split")), accessor)
+				g.P("req.", fieldName, " = ", accessor)
+				g.P()
+				continue
 			}
 			parseExpression = fmt.Sprintf("%s[%s](%s, Parse%s)", g.QualifiedGoIdent(parsersImport.Ident("ParseRepeated")), parserType, accessor, parserFunc)
 		}
