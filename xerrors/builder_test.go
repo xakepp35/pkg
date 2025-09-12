@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+
 	"strings"
 	"testing"
 )
@@ -13,7 +15,7 @@ func TestEqual(t *testing.T) {
 
 	t.Run("str", func(t *testing.T) {
 		err := Err(sql.ErrNoRows).Str("foo", "bar").Msg("not found")
-
+		Err(errors.New("test_error")).MsgProto(codes.Aborted, "")
 		require.Equal(t, err.Error(), fmt.Errorf("not found foo=bar: %w", sql.ErrNoRows).Error())
 	})
 

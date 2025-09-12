@@ -30,6 +30,7 @@ type ErrBuilder interface {
 
 type errorBuilder struct {
 	err        error
+	code       codes.Code
 	errBuffer  []byte
 	argsBuffer []byte
 }

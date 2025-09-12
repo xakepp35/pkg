@@ -1,10 +1,15 @@
 package xerrors
 
+import (
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
+
 type messageError struct {
+	code    codes.Code
 	err     error
 	message string
-
-	output string
+	output  string
 }
 
 func (m *messageError) Unwrap() error {
@@ -13,6 +18,10 @@ func (m *messageError) Unwrap() error {
 
 func (m *messageError) Error() string {
 	return m.output
+}
+
+func (m *messageError) GRPCStatus() *status.Status {
+	return status.New(codes.Internal, m.message)
 }
 
 func New(err error, message string) error {
