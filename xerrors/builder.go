@@ -24,6 +24,7 @@ type ErrBuilder interface {
 	Send() error
 	Msg(msg string) error
 	MsgProto(code codes.Code, msg string) error
+	Proto(code codes.Code) error
 
 	Fielder
 }
@@ -75,6 +76,12 @@ func (e *errorBuilder) Msg(msg string) error {
 func (e *errorBuilder) MsgProto(code codes.Code, msg string) error {
 	defer e.resetSelf()
 	return status.Error(code, e.renderErr(msg).Error())
+}
+
+// Proto *status.Status proto error without message
+func (e *errorBuilder) Proto(code codes.Code) error {
+	defer e.resetSelf()
+	return status.Error(code, e.renderErr("").Error())
 }
 
 func Err(err error) ErrBuilder {
