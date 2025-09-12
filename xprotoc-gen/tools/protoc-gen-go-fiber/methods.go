@@ -129,12 +129,14 @@ func genReadReqFromQueryOrParams(g *protogen.GeneratedFile, message *protogen.Me
 		case protoreflect.StringKind:
 			parserFunc = "String"
 			parserType = "string"
-			if field.Desc.IsList() {
-				accessor = fmt.Sprintf(`%s(%s, ",")`, g.QualifiedGoIdent(stringsImport.Ident("Split")), accessor)
+			if !field.Desc.HasPresence() {
+				if field.Desc.IsList() {
+					accessor = fmt.Sprintf(`%s(%s, ",")`, g.QualifiedGoIdent(stringsImport.Ident("Split")), accessor)
+				}
+				g.P("req.", fieldName, " = ", accessor)
+				g.P()
+				continue
 			}
-			g.P("req.", fieldName, " = ", accessor)
-			g.P()
-			continue
 		case protoreflect.BoolKind:
 			parserFunc = "Bool"
 			parserType = "bool"

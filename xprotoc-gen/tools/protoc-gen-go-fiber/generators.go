@@ -51,6 +51,7 @@ func genImports(g *protogen.GeneratedFile) {
 
 func genGlobalVars(g *protogen.GeneratedFile) {
 	g.P("var (")
+	g.P("\tParseString = ", parsersImport.Ident("ParseString"))
 	g.P("\tParseInt32 = ", parsersImport.Ident("ParseInt32"))
 	g.P("\tParseInt64 = ", parsersImport.Ident("ParseInt64"))
 	g.P("\tParseUint32 = ", parsersImport.Ident("ParseUint32"))

@@ -43,6 +43,11 @@ func ParseInt32(s string) (int32, error) {
 	return int32(v), err
 }
 
+// ParseString just return string
+func ParseString(s string) (string, error) {
+	return s, nil
+}
+
 // ParseInt64 Integer types int64
 func ParseInt64(s string) (int64, error) {
 	return strconv.ParseInt(s, 10, 64)
