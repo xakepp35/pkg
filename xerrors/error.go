@@ -21,20 +21,32 @@ func (m *messageError) Error() string {
 }
 
 func (m *messageError) GRPCStatus() *status.Status {
-	return status.New(codes.Internal, m.message)
+	return status.New(m.code, m.message)
 }
 
 func New(err error, message string) error {
+	return &messageError{
+		err:     err,
+		message: message,
+		output:  outputBuild(err, message),
+	}
+}
+
+func NewProto(code codes.Code, err error, message string) error {
+	return &messageError{
+		err:     err,
+		message: message,
+		output:  outputBuild(err, message),
+		code:    code,
+	}
+}
+
+func outputBuild(err error, message string) string {
 	errStr := err.Error()
 	output := make([]byte, len(errStr)+len(message)+2)
 
 	copy(output, message)
 	copy(output[len(message):len(message)+2], ": ")
 	copy(output[len(message)+2:], errStr)
-
-	return &messageError{
-		err:     err,
-		message: message,
-		output:  string(output),
-	}
+	return string(output)
 }
