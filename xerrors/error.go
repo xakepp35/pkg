@@ -16,18 +16,24 @@ func (m *messageError) Error() string {
 }
 
 func New(err error, message string) error {
-	var offset int
-	sep := ": "
-	if len(message) != 0 {
-		offset = len([]rune(sep))
-	}
+	var output []byte
 
 	errStr := err.Error()
-	output := make([]byte, len(errStr)+len(message)+offset)
 
-	copy(output, message)
-	copy(output[len(message):len(message)+offset], sep)
-	copy(output[len(message)+offset:], errStr)
+	if len(message) != 0 {
+		sep := ": "
+		offset := len([]rune(sep))
+
+		output = make([]byte, len(errStr)+len(message)+offset)
+		copy(output[len(message):len(message)+offset], sep)
+		copy(output[len(message)+offset:], errStr)
+		copy(output, message)
+	} else {
+
+		output = make([]byte, len(errStr))
+		copy(output[len(message):], errStr)
+		copy(output, message)
+	}
 
 	return &messageError{
 		err:     err,
