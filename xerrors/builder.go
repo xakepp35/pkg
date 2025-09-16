@@ -86,7 +86,8 @@ func (e *errorBuilder) MsgProto(code codes.Code, msg string) error {
 // Proto *status.Status proto error without message
 func (e *errorBuilder) Proto(code codes.Code) error {
 	defer e.resetSelf()
-	return status.Error(code, e.renderErr("").Error())
+	e.code = &code
+	return e.renderErr("")
 }
 
 func Err(err error) ErrBuilder {

@@ -3,8 +3,11 @@ package xerrors
 import (
 	"database/sql"
 	"errors"
-	"github.com/stretchr/testify/require"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestNew(t *testing.T) {
@@ -26,5 +29,28 @@ func TestIs(t *testing.T) {
 		err := Err(sql.ErrNoRows).Str("foo", "bar").Msg("not found")
 
 		require.True(t, errors.Is(err, sql.ErrNoRows))
+	})
+}
+
+func TestNewProto(t *testing.T) {
+	t.Run("check unwrapped error", func(t *testing.T) {
+		err := NewProto(codes.AlreadyExists, errors.New("foo"), "bar")
+		require.Equal(t, "bar: foo", err.Error())
+	})
+	t.Run("check code by error", func(t *testing.T) {
+		err := NewProto(codes.AlreadyExists, errors.New("foo"), "bar")
+		status, ok := status.FromError(err)
+		if !ok {
+			t.Error("got absent grpc status")
+			return
+		}
+		if status.Code() != codes.AlreadyExists {
+			t.Errorf("got grpc status code: %v, want %v", status.Code().String(), codes.AlreadyExists.String())
+			return
+		}
+		if status.Message() != "bar" {
+			t.Errorf("got grpc status message: %v, want bar", status.Message())
+			return
+		}
 	})
 }

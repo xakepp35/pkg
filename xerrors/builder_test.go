@@ -4,18 +4,18 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc/codes"
-
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestEqual(t *testing.T) {
 
 	t.Run("str", func(t *testing.T) {
 		err := Err(sql.ErrNoRows).Str("foo", "bar").Msg("not found")
-		Err(errors.New("test_error")).MsgProto(codes.Aborted, "")
 		require.Equal(t, err.Error(), fmt.Errorf("not found foo=bar: %w", sql.ErrNoRows).Error())
 	})
 
@@ -73,4 +73,53 @@ func TestErrBuilder_Empty(t *testing.T) {
 	if got := err.Error(); !strings.Contains(got, "something failed") {
 		t.Errorf("unexpected error string: %s", got)
 	}
+}
+
+func TestErrBuilder_ProtoMsg(t *testing.T) {
+	orig := errors.New("foo")
+	t.Run("check unwrapped error", func(t *testing.T) {
+		err := Err(orig).MsgProto(codes.AlreadyExists, "bar")
+		require.Equal(t, "bar: foo", err.Error())
+	})
+	t.Run("check code by error", func(t *testing.T) {
+		err := Err(orig).MsgProto(codes.AlreadyExists, "bar")
+		grpcStatus, ok := status.FromError(err)
+		fmt.Println(grpcStatus, ok)
+		if !ok {
+			t.Error("got absent grpc status")
+			return
+		}
+		if grpcStatus.Code() != codes.AlreadyExists {
+			t.Errorf("got grpc status code: %v, want %v", grpcStatus.Code().String(), codes.AlreadyExists.String())
+			return
+		}
+		if grpcStatus.Message() != "bar" {
+			t.Errorf("got grpc status message: %v, want bar", grpcStatus.Message())
+			return
+		}
+	})
+}
+
+func TestErrBuilder_Proto(t *testing.T) {
+	orig := errors.New("foo")
+	t.Run("check unwrapped error", func(t *testing.T) {
+		err := Err(orig).Proto(codes.AlreadyExists)
+		require.Equal(t, "foo", err.Error())
+	})
+	t.Run("check code by error", func(t *testing.T) {
+		err := Err(orig).Proto(codes.AlreadyExists)
+		grpcStatus, ok := status.FromError(err)
+		if !ok {
+			t.Error("got absent grpc status")
+			return
+		}
+		if grpcStatus.Code() != codes.AlreadyExists {
+			t.Errorf("got grpc status code: %v, want %v", grpcStatus.Code().String(), codes.AlreadyExists.String())
+			return
+		}
+		if grpcStatus.Message() != "" {
+			t.Errorf("got grpc status message: %v, want bar", grpcStatus.Message())
+			return
+		}
+	})
 }

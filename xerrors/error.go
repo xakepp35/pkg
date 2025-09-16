@@ -41,7 +41,7 @@ func NewProto(code codes.Code, err error, message string) error {
 	}
 }
 
-func outputBuild(err error, message string) string{
+func outputBuild(err error, message string) string {
 	var output []byte
 
 	errStr := err.Error()
