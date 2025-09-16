@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 var buildersPool = sync.Pool{
@@ -31,6 +30,7 @@ type ErrBuilder interface {
 
 type errorBuilder struct {
 	err        error
+	code       *codes.Code
 	errBuffer  []byte
 	argsBuffer []byte
 }
@@ -59,6 +59,10 @@ func (e *errorBuilder) renderErr(msg string) error {
 		return errors.New(string(e.errBuffer))
 	}
 
+	if e.code != nil {
+		return NewProto(*e.code, e.err, string(e.errBuffer))
+	}
+
 	return New(e.err, string(e.errBuffer))
 }
 
@@ -75,7 +79,15 @@ func (e *errorBuilder) Msg(msg string) error {
 // MsgProto *status.Status proto error
 func (e *errorBuilder) MsgProto(code codes.Code, msg string) error {
 	defer e.resetSelf()
-	return status.Error(code, e.renderErr(msg).Error())
+	e.code = &code
+	return e.renderErr(msg)
+}
+
+// Proto *status.Status proto error without message
+func (e *errorBuilder) Proto(code codes.Code) error {
+	defer e.resetSelf()
+	e.code = &code
+	return e.renderErr("")
 }
 
 // Proto *status.Status proto error without message
