@@ -30,6 +30,18 @@ func TestIs(t *testing.T) {
 
 		require.True(t, errors.Is(err, sql.ErrNoRows))
 	})
+
+	t.Run("err by proto", func(t *testing.T) {
+		err := Err(sql.ErrNoRows).Proto(codes.NotFound)
+
+		require.True(t, errors.Is(err, sql.ErrNoRows))
+	})
+
+	t.Run("err by proto msg", func(t *testing.T) {
+		err := Err(sql.ErrNoRows).MsgProto(codes.NotFound, "not found")
+
+		require.True(t, errors.Is(err, sql.ErrNoRows))
+	})
 }
 
 func TestNewProto(t *testing.T) {

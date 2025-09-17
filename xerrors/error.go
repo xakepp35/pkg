@@ -24,6 +24,16 @@ func (m *messageError) GRPCStatus() *status.Status {
 	return status.New(m.code, m.message)
 }
 
+func (m *messageError) Is(err error) bool {
+	if err == nil && m.err == nil {
+		return true
+	}
+	if (err != nil && m.err == nil) || (err == nil && m.err != nil) {
+		return false
+	}
+	return err.Error() == m.err.Error()
+}
+
 func New(err error, message string) error {
 	return &messageError{
 		err:     err,
