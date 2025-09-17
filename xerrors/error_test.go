@@ -66,3 +66,26 @@ func TestNewProto(t *testing.T) {
 		}
 	})
 }
+
+func TestNewProto(t *testing.T) {
+	t.Run("check unwrapped error", func(t *testing.T) {
+		err := NewProto(codes.AlreadyExists, errors.New("foo"), "bar")
+		require.Equal(t, "bar: foo", err.Error())
+	})
+	t.Run("check code by error", func(t *testing.T) {
+		err := NewProto(codes.AlreadyExists, errors.New("foo"), "bar")
+		status, ok := status.FromError(err)
+		if !ok {
+			t.Error("got absent grpc status")
+			return
+		}
+		if status.Code() != codes.AlreadyExists {
+			t.Errorf("got grpc status code: %v, want %v", status.Code().String(), codes.AlreadyExists.String())
+			return
+		}
+		if status.Message() != "bar" {
+			t.Errorf("got grpc status message: %v, want bar", status.Message())
+			return
+		}
+	})
+}
