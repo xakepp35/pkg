@@ -90,11 +90,6 @@ func (e *errorBuilder) Proto(code codes.Code) error {
 	return e.renderErr("")
 }
 
-// Proto *status.Status proto error without message
-func (e *errorBuilder) Proto(code codes.Code) error {
-	defer e.resetSelf()
-	return status.Error(code, e.renderErr("").Error())
-}
 
 func Err(err error) ErrBuilder {
 	builder := buildersPool.Get().(*errorBuilder)
