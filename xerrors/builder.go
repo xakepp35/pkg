@@ -90,7 +90,7 @@ func (e *errorBuilder) Proto(code codes.Code) error {
 	return e.renderErr("")
 }
 
-
+// Err it is not allowed to use with nil error
 func Err(err error) ErrBuilder {
 	builder := buildersPool.Get().(*errorBuilder)
 	builder.err = err
