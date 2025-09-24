@@ -161,6 +161,23 @@ func genReadReqFromQueryOrParams(g *protogen.GeneratedFile, message *protogen.Me
 		case protoreflect.BytesKind:
 			parserFunc = "Bytes"
 			parserType = "[]byte"
+		case protoreflect.EnumKind:
+			accessor = fmt.Sprintf(`%s_value[%s]`, g.QualifiedGoIdent(field.Enum.GoIdent), accessor)
+			if field.Desc.HasPresence() {
+				g.P("if v, ok := ", accessor, "; ok {")
+				g.P(`	req.`, fieldName, " = ", g.QualifiedGoIdent(parsersImport.Ident("Ptr")), "(", field.Enum.GoIdent, "(v)", ")")
+				g.P("} ")
+				g.P()
+				continue
+			}
+			g.P("if v, ok := ", accessor, "; ok {")
+			g.P(`	req.`, fieldName, " = ", field.Enum.GoIdent, "(v)")
+			g.P("} else {")
+			g.P(`  return HandleGRPCStatusError(c, `,
+				errorsBuilderImport.Ident("Err"), `(err).Str("field", "`, protoName, `").MsgProto(`, protoCodesImport.Ident("InvalidArgument"), `, "parse query/params field failed"))`)
+			g.P("}")
+			g.P()
+			continue
 		default:
 			g.P("// unsupported type for ", fieldName)
 			continue

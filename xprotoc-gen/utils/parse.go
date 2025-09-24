@@ -99,3 +99,7 @@ func ParseEnum[T ~int32](s string) (T, error) {
 	v, err := strconv.ParseInt(s, 10, 32)
 	return T(v), err
 }
+
+func Ptr[T any](v T) *T {
+	return &v
+}
