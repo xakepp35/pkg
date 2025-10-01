@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -162,6 +163,19 @@ func genReadReqFromQueryOrParams(g *protogen.GeneratedFile, message *protogen.Me
 			parserFunc = "Bytes"
 			parserType = "[]byte"
 		case protoreflect.EnumKind:
+			if field.Desc.IsList() {
+				accessor = fmt.Sprintf(`%s_value[string(value)]`, g.QualifiedGoIdent(field.Enum.GoIdent))
+				g.P("c.Context().QueryArgs().VisitAll(func(key, value []byte) {")
+				g.P("	if string(key) == ", strconv.Quote(protoName), "{")
+				g.P("		if v, ok := ", accessor, "; ok {")
+				g.P(`			req.`, fieldName, " = append(req.", fieldName, ", ", field.Enum.GoIdent, "(v))")
+				g.P("		}")
+				g.P("	}")
+				g.P("})")
+				g.P()
+				return nil
+			}
+
 			accessor = fmt.Sprintf(`%s_value[%s]`, g.QualifiedGoIdent(field.Enum.GoIdent), accessor)
 			if field.Desc.HasPresence() {
 				g.P("if v, ok := ", accessor, "; ok {")
