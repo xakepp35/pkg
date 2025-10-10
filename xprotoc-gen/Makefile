@@ -76,6 +76,10 @@ proto_gen:
 			 --go-fasthttp_out=$(GO_OUT) \
 			 $(foreach opt,$(PROTOC_GEN_GO_FASTHTTP_OPTS),--go-fasthttp_opt=$(opt)) \
              $(PROTO_FILES)
+
+	# Remove omitempty
+	@find $(GO_OUT) -name "*.pb.go" -exec sed -i 's/,omitempty//g' {} \;
+
 	@patch-swagger $(GO_OUT)
 .PHONY: proto_gen
 
