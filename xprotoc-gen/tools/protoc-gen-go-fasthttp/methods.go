@@ -160,7 +160,12 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("}")
 	g.P()
 
-	// --- Всегда проверяем HttpBody ---
+	g.P("if h, ok := ctx.Value(struct{}{}).(map[string]string); ok {")
+	g.P("    for k, v := range h {")
+	g.P("        c.Response.Header.Set(k, v)")
+	g.P("    }")
+	g.P("}")
+
 	httpBodyImport := g.QualifiedGoIdent(
 		protogen.GoIdent{
 			GoImportPath: "google.golang.org/genproto/googleapis/api/httpbody",
@@ -208,7 +213,6 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("c.SetStatusCode(", fasthttpImport.Ident("StatusOK"), ")")
 	g.P("c.Write(data)")
 }
-
 func genRouteMethodName(method *protogen.Method) string {
 	return fmt.Sprintf("__%s_%s_Route", method.Parent.GoName, method.GoName)
 }
