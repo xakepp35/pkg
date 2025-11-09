@@ -160,7 +160,7 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("}")
 	g.P()
 
-	g.P("if h, ok := ctx.Value(struct{}{}).(map[string]string); ok {")
+	g.P("if h, ok := ctx.Value(\"headers\").(map[string]string); ok {")
 	g.P("    for k, v := range h {")
 	g.P("        c.Response.Header.Set(k, v)")
 	g.P("    }")
