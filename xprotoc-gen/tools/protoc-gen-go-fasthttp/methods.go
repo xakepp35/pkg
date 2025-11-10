@@ -141,6 +141,12 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("resp any")
 	g.P(")")
 
+	g.P("ctx = context.WithValue(ctx, \"fasthttp-ctx\", c)")
+	g.P("if gid := c.Request.Header.Peek(\"x-gid\"); gid != nil {")
+	g.P("	 c.Response.Header.Set(\"x-gid\", string(gid))")
+	g.P("}")
+
+	g.P()
 	g.P("if r.interceptor != nil {")
 	g.P("handler := func(c context.Context, req any) (any, error) {")
 	g.P("return r.server.", method.GoName, "(c, req.(*", method.Input.GoIdent, "))")
@@ -157,13 +163,6 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("if err != nil {")
 	g.P(errorHandlersImport.Ident(*flagGrpcErrorHandleFunc), "(c, err)")
 	g.P("return")
-	g.P("}")
-	g.P()
-
-	g.P("if h, ok := ctx.Value(\"headers\").(map[string]string); ok {")
-	g.P("    for k, v := range h {")
-	g.P("        c.Response.Header.Set(k, v)")
-	g.P("    }")
 	g.P("}")
 
 	httpBodyImport := g.QualifiedGoIdent(
@@ -213,6 +212,7 @@ func genMethodExecPart(g *protogen.GeneratedFile, method *protogen.Method) {
 	g.P("c.SetStatusCode(", fasthttpImport.Ident("StatusOK"), ")")
 	g.P("c.Write(data)")
 }
+
 func genRouteMethodName(method *protogen.Method) string {
 	return fmt.Sprintf("__%s_%s_Route", method.Parent.GoName, method.GoName)
 }
